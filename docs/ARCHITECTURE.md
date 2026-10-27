@@ -1,32 +1,33 @@
 # Arquitectura de Compass_DiffMap
 
-> Generado por Compass el 2026-10-27 sobre `WORKTREE`. Regenerar con `compass map --doc`.
+> Generado por Compass el 2026-10-27 sobre `1cc0ecbc1d`. Regenerar con `compass map --doc`.
 
 Compass: CLI + app web que convierten un repo, un diff o un PR en un mapa con zoom semántico, más una skill de Claude Code que agrega recorrido, resúmenes y riesgos.
 
 ## Resumen
 
-- **Archivos:** 53 · **Líneas:** 7,186
-- **Símbolos:** 191 · **Dependencias:** 223
-- **Lenguajes:** typescript (24), json (10), tsx (7), markdown (4), yaml (3), javascript (1), html (1), css (1), shell (1)
+- **Archivos:** 61 · **Líneas:** 12,826
+- **Símbolos:** 194 · **Dependencias:** 223
+- **Lenguajes:** typescript (24), json (10), tsx (7), markdown (6), yaml (3), javascript (1), html (1), css (1), shell (1)
 
 ## Módulos
 
 | Módulo | Archivos | Líneas | Dependencias | Descripción |
 | --- | ---: | ---: | ---: | --- |
-| `packages/` | 40 | 4,988 | 0 | Monorepo pnpm: motor, CLI y UI. |
+| `docs/` | 8 | 5,446 | 0 | Documentación: guía de la interfaz (GUIA-UI.md), capturas y esta arquitectura. |
+| &nbsp;&nbsp;`docs/img/` | 6 | 5,266 | 0 | Capturas usadas en el README y la guía. |
+| `packages/` | 40 | 5,190 | 0 | Monorepo pnpm: motor, CLI y UI. |
+| &nbsp;&nbsp;`packages/web/` | 16 | 2,398 | 8 | App React + React Flow + ELK compilada a un solo index.html. |
+| &nbsp;&nbsp;&nbsp;&nbsp;`packages/web/src/` | 12 | 2,329 | 8 | Vista por niveles (model/), lienzo y nodos (canvas/), paneles laterales (panels/). |
 | &nbsp;&nbsp;`packages/core/` | 15 | 2,213 | 19 | Motor sin UI: git, parseo con tree-sitter, mapeo de hunks a símbolos, grafo con rollup e insights. |
 | &nbsp;&nbsp;&nbsp;&nbsp;`packages/core/src/` | 11 | 2,056 | 21 | Código del motor; schema.ts es el contrato de graph.json. |
 | &nbsp;&nbsp;&nbsp;&nbsp;`packages/core/test/` | 2 | 126 | 2 | Pruebas sobre un repo multi-lenguaje generado al vuelo. |
-| &nbsp;&nbsp;`packages/web/` | 16 | 2,196 | 8 | App React + React Flow + ELK compilada a un solo index.html. |
-| &nbsp;&nbsp;&nbsp;&nbsp;`packages/web/src/` | 12 | 2,127 | 8 | Vista por niveles (model/), lienzo y nodos (canvas/), paneles laterales (panels/). |
 | &nbsp;&nbsp;`packages/cli/` | 9 | 579 | 11 | Comando compass: map, diff, pr, insights, serve, export, init. |
 | &nbsp;&nbsp;&nbsp;&nbsp;`packages/cli/src/` | 6 | 541 | 11 | Comandos, servidor local con API para los controles de la app y export HTML. |
 | &nbsp;&nbsp;&nbsp;&nbsp;`packages/cli/scripts/` | 1 | 15 | 0 | Copia el build de la UI dentro del CLI. |
 | `skill/` | 2 | 135 | 0 | Skill de Claude Code. |
 | &nbsp;&nbsp;`skill/compass/` | 2 | 135 | 0 | SKILL.md y formato de insights.json. |
 | &nbsp;&nbsp;&nbsp;&nbsp;`skill/compass/references/` | 1 | 49 | 0 |  |
-| `docs/` | 1 | 68 | 0 |  |
 | `scripts/` | 1 | 51 | 0 | Instalador (clona, construye, deja el comando y la skill). |
 | `.github/` | 1 | 42 | 0 | CI: build y pruebas; en PRs publica el DiffMap como artefacto. |
 | &nbsp;&nbsp;`.github/workflows/` | 1 | 42 | 0 |  |
