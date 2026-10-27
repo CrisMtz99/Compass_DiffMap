@@ -279,25 +279,57 @@ export function useSymbolLines(n: DiffNode, max = CODE_MAX_LINES): CodeLine[] | 
   }, [src, n, graph.files, which, max]);
 }
 
-export function CodeLines({ lines, language, total }: { lines: CodeLine[] | null; language?: string; total?: number }) {
+/** Una línea de código. Con `wrap`, las continuaciones se alinean con la indentación de la línea (sangría colgante). */
+export function CodeRow({ no, mark, delBefore, text, language, wrap }: { no: string | number; mark: CodeLine['mark']; delBefore?: boolean; text: string; language?: string; wrap?: boolean }) {
+  const expanded = text.replace(/\t/g, '    ');
+  const lead = wrap ? expanded.match(/^ */)![0].length : 0;
+  const body = wrap ? expanded.slice(lead) : expanded;
+  const html = language ? hljs.highlight(body, { language, ignoreIllegals: true }).value : escapeHtml(body);
+  return (
+    <div className={`cl cl-${mark} ${delBefore ? 'cl-delbefore' : ''}`}>
+      <span className="cl-no">{no}</span>
+      <span
+        className="cl-txt"
+        style={wrap ? { paddingLeft: `${lead + 2}ch`, textIndent: '-2ch' } : undefined}
+        dangerouslySetInnerHTML={{ __html: html || ' ' }}
+      />
+    </div>
+  );
+}
+
+const hlLang = (language?: string) => (language === 'tsx' ? 'typescript' : language && hljs.getLanguage(language) ? language : undefined);
+
+export function CodeLines({ lines, language, total, wrap }: { lines: CodeLine[] | null; language?: string; total?: number; wrap?: boolean }) {
   if (lines === null) return <div className="code-body loading">cargando…</div>;
   if (!lines.length) return <div className="code-body loading">sin código disponible</div>;
-  const lang = language === 'tsx' ? 'typescript' : language && hljs.getLanguage(language) ? language : undefined;
+  const lang = hlLang(language);
   // quitar indentación común
   const indent = Math.min(...lines.filter((l) => l.text.trim()).map((l) => l.text.match(/^\s*/)![0].length));
   return (
-    <div className="code-body">
-      {lines.map((l) => {
-        const text = l.text.slice(Number.isFinite(indent) ? indent : 0);
-        const html = lang ? hljs.highlight(text, { language: lang, ignoreIllegals: true }).value : escapeHtml(text);
-        return (
-          <div key={l.no} className={`cl cl-${l.mark} ${l.delBefore ? 'cl-delbefore' : ''}`}>
-            <span className="cl-no">{l.no}</span>
-            <span className="cl-txt" dangerouslySetInnerHTML={{ __html: html || ' ' }} />
-          </div>
-        );
-      })}
+    <div className={`code-body ${wrap ? 'wrap' : ''}`}>
+      {lines.map((l) => (
+        <CodeRow key={l.no} no={l.no} mark={l.mark} delBefore={l.delBefore} text={l.text.slice(Number.isFinite(indent) ? indent : 0)} language={lang} wrap={wrap} />
+      ))}
       {total !== undefined && total > lines.length && <div className="cl-more">… {total - lines.length} líneas más</div>}
+    </div>
+  );
+}
+
+/** Hunks del diff con el mismo render (resaltado + ajuste de línea). */
+export function DiffHunks({ hunks, language, wrap }: { hunks: { oldStart: number; oldLines: number; newStart: number; newLines: number; lines: string[] }[]; language?: string; wrap?: boolean }) {
+  const lang = hlLang(language);
+  return (
+    <div className={`code-body ${wrap ? 'wrap' : ''}`}>
+      {hunks.map((h, i) => (
+        <div key={i} className="hunk">
+          <div className="hunk-h">
+            @@ −{h.oldStart},{h.oldLines} +{h.newStart},{h.newLines} @@
+          </div>
+          {h.lines.map((l, j) => (
+            <CodeRow key={j} no={l[0] === ' ' ? '' : l[0]} mark={l[0] === '+' ? 'add' : l[0] === '-' ? 'del' : 'ctx'} text={l.slice(1)} language={lang} wrap={wrap} />
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

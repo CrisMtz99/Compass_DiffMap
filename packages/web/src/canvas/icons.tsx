@@ -120,6 +120,16 @@ export const Icon = {
       <path d="M4.5 5v6M11.5 7c0 3-7 2-7 4" />
     </svg>
   ),
+  expand: (
+    <svg {...P}>
+      <path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9" />
+    </svg>
+  ),
+  collapse: (
+    <svg {...P}>
+      <path d="M13 3L9 7M9 3.5V7h3.5M3 13l4-4M7 12.5V9H3.5" />
+    </svg>
+  ),
   close: (
     <svg {...P}>
       <path d="M4 4l8 8M12 4l-8 8" />

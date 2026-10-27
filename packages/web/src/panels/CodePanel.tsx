@@ -1,12 +1,67 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DiffNode } from '@compass/core';
 import { useCanvas } from '../canvas/context';
 import { Icon, KindIcon } from '../canvas/icons';
-import { CodeLines, useSymbolLines } from '../canvas/nodes';
+import { CodeLines, DiffHunks, useSymbolLines } from '../canvas/nodes';
+
+const DEFAULT_W = 480;
+const MIN_W = 380;
+/** El mapa nunca queda con menos del 30% de la ventana. */
+const maxW = () => Math.max(MIN_W, Math.round(window.innerWidth * 0.7));
+const clampW = (w: number) => Math.min(maxW(), Math.max(MIN_W, Math.round(w)));
+
+// Preferencias por navegador (pueden no estar disponibles: modo privado, export abierto como archivo…)
+const load = (k: string) => {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const save = (k: string, v: string) => {
+  try {
+    localStorage.setItem(k, v);
+  } catch {
+    /* sin almacenamiento: solo dura la sesión */
+  }
+};
+
+/** Ancho del panel arrastrando su borde izquierdo; doble clic = ancho por defecto. */
+function usePanelWidth() {
+  const [width, setWidth] = useState(() => clampW(Number(load('compass.codepanel.width')) || DEFAULT_W));
+  const dragging = useRef(false);
+  useEffect(() => save('compass.codepanel.width', String(width)), [width]);
+  useEffect(() => {
+    const onResize = () => setWidth((w) => clampW(w));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    document.body.classList.add('resizing');
+  }, []);
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (dragging.current) setWidth(clampW(window.innerWidth - e.clientX));
+  }, []);
+  const onPointerUp = useCallback(() => {
+    dragging.current = false;
+    document.body.classList.remove('resizing');
+  }, []);
+  return { width, setWidth, handle: { onPointerDown, onPointerMove, onPointerUp, onDoubleClick: () => setWidth(clampW(DEFAULT_W)) } };
+}
 
 export function CodePanel({ node, onClose, onFocus }: { node: DiffNode; onClose: () => void; onFocus: (id: string) => void }) {
   const { graph, idx } = useCanvas();
   const [tab, setTab] = useState<'code' | 'diff'>('code');
+  const [wrap, setWrapRaw] = useState(() => load('compass.codepanel.wrap') !== '0');
+  const setWrap = (w: boolean) => {
+    setWrapRaw(w);
+    save('compass.codepanel.wrap', w ? '1' : '0');
+  };
+  const { width, setWidth, handle } = usePanelWidth();
+  const isMax = width >= maxW() - 4;
   const fileLen = graph.nodes.find((n) => n.id === node.path)?.stats.lines ?? 0;
   const asSymbol: DiffNode = node.range ? node : { ...node, range: { start: 1, end: Math.max(1, fileLen) } };
   const lines = useSymbolLines(asSymbol, 600);
@@ -21,12 +76,16 @@ export function CodePanel({ node, onClose, onFocus }: { node: DiffNode; onClose:
   const summary = graph.insights.summaries?.[node.id];
 
   return (
-    <aside className="codepanel">
+    <aside className="codepanel" style={{ width }}>
+      <div className="cp-resize" {...handle} title="Arrastra para cambiar el ancho · doble clic para restablecer" />
       <div className="cp-head">
         <span className={`dot s-${node.status}`} />
         <KindIcon kind={node.kind} />
         <b>{node.name}</b>
         <span className="kind">{node.kind}</span>
+        <button className="ib cp-max" onClick={() => setWidth(isMax ? DEFAULT_W : maxW())} title={isMax ? 'Restablecer ancho' : 'Ampliar panel'}>
+          {isMax ? Icon.collapse : Icon.expand}
+        </button>
         <button className="ib" onClick={onClose} title="Cerrar">
           {Icon.close}
         </button>
@@ -59,35 +118,26 @@ export function CodePanel({ node, onClose, onFocus }: { node: DiffNode; onClose:
           </div>
         )}
       </div>
-      {fd && (
-        <div className="seg small">
-          <button className={tab === 'code' ? 'on' : ''} onClick={() => setTab('code')}>
-            Código
-          </button>
-          <button className={tab === 'diff' ? 'on' : ''} onClick={() => setTab('diff')}>
-            Diff ({hunks.length} hunks)
-          </button>
-        </div>
-      )}
+      <div className="cp-tools">
+        {fd && (
+          <div className="seg small">
+            <button className={tab === 'code' ? 'on' : ''} onClick={() => setTab('code')}>
+              Código
+            </button>
+            <button className={tab === 'diff' ? 'on' : ''} onClick={() => setTab('diff')}>
+              Diff ({hunks.length} hunks)
+            </button>
+          </div>
+        )}
+        <label className="check cp-wrap" title="Partir las líneas largas para que quepan en el panel">
+          <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} /> Ajustar líneas
+        </label>
+      </div>
       <div className="cp-code">
         {tab === 'code' || !fd ? (
-          <CodeLines lines={lines} language={node.language} total={asSymbol.range!.end - asSymbol.range!.start + 1} />
+          <CodeLines lines={lines} language={node.language} total={asSymbol.range!.end - asSymbol.range!.start + 1} wrap={wrap} />
         ) : (
-          <div className="code-body">
-            {hunks.map((h, i) => (
-              <div key={i} className="hunk">
-                <div className="hunk-h">
-                  @@ −{h.oldStart},{h.oldLines} +{h.newStart},{h.newLines} @@
-                </div>
-                {h.lines.map((l, j) => (
-                  <div key={j} className={`cl ${l[0] === '+' ? 'cl-add' : l[0] === '-' ? 'cl-del' : 'cl-ctx'}`}>
-                    <span className="cl-no">{l[0]}</span>
-                    <span className="cl-txt">{l.slice(1) || ' '}</span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          <DiffHunks hunks={hunks} language={node.language} wrap={wrap} />
         )}
       </div>
     </aside>

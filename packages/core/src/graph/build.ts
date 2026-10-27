@@ -249,7 +249,8 @@ export async function analyze(opts: AnalyzeOptions): Promise<DiffGraph> {
       const hits: string[] = [];
       for (const t of importedFiles) {
         const s = findIn(t, name, false);
-        if (s) hits.push(symId(t, s.qualified));
+        // un símbolo de nivel superior solo es alcanzable desde otro archivo si se exporta
+        if (s && (s.parent || s.exported)) hits.push(symId(t, s.qualified));
       }
       return hits.length === 1 ? hits[0] : undefined;
     };

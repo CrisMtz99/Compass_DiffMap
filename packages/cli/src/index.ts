@@ -13,7 +13,7 @@ const program = new Command();
 program
   .name('compass')
   .description('Compass — mapa navegable de repositorios y diffs (DiffMap)')
-  .version('0.2.0')
+  .version('0.2.1')
   .option('-C, --root <dir>', 'raíz del repositorio a analizar', process.cwd());
 
 const rootOf = () => Git.findRoot(resolve(program.opts().root));

@@ -14,7 +14,7 @@ Cómo leer y navegar la app de Compass (`compass serve` o un HTML de `compass ex
 | **Filtros** | *Exact / With Context* (solo diff) y *Aristas: Al pasar / Cambiadas / Todas*. |
 | **Barra de contexto** | El PR o la comparación base → head, la ruta del nodo aislado y *Dejar de aislar*. Si hay un trace de Callers o Dependencies activo, aparece aquí con *limpiar*. |
 | **Lienzo** | El mapa. Abajo a la izquierda, la leyenda y el conteo de nodos y aristas; abajo a la derecha, el minimapa. |
-| **Panel de código** | Se abre al hacer clic en un símbolo: firma, resumen, quién lo llama, a quién llama, el código y el diff. |
+| **Panel de código** | Se abre al hacer clic en un símbolo: firma, resumen, quién lo llama, a quién llama, el código y el diff. Ver [Panel de código](#panel-de-código). |
 
 ## Cómo leer el mapa
 
@@ -71,6 +71,15 @@ Las aristas pasan por detrás de las fichas: nunca tachan un nombre. Mientras no
 | **Ir a un insight** | Clic en cualquier elemento del panel: aísla su contenedor, elige el nivel adecuado y lo centra. |
 | **Navegar** | Arrastrar = mover, rueda = zoom, minimapa = saltar. Atrás / adelante recorre el historial de aislamientos y niveles. |
 | **Buscar** | Riel → Buscar: por nombre o ruta, con filtro *solo cambiados*. |
+
+## Panel de código
+
+![Panel de código ampliado, con ajuste de línea](img/panel-codigo.png)
+
+- **Ancho ajustable**: arrastra su borde izquierdo (se ilumina al pasar el mouse). Va de 380 px al 70% de la ventana, para que el mapa nunca quede con menos del 30%. Doble clic en el borde = ancho por defecto (480 px); el botón ⤢ del encabezado lo amplía al máximo y lo regresa.
+- **Ajustar líneas** (activado por defecto): las líneas largas se parten dentro del panel en vez de pedir scroll horizontal. La continuación se alinea con la indentación de su propia línea, más dos espacios, para no perder la estructura de bloques; el número de línea solo aparece en el primer renglón y el fondo verde/rojo cubre la línea completa. Aplica en *Código* y en *Diff*. Apagado, el panel muestra cada línea completa con scroll horizontal.
+- El ancho y el ajuste se recuerdan en el navegador.
+- Dentro del lienzo (nivel Code) las líneas largas siguen recortándose con "…": el layout calcula la altura de cada caja antes de dibujarla. Para leerlas completas, abre el panel.
 
 ## Cámara inicial
 

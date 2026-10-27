@@ -75,3 +75,15 @@ test('reglas de arquitectura', async () => {
   const g = await analyze({ root: fx.root, mode: 'map', head: 'feature', config });
   assert.equal(g.insights.violations?.length, 1);
 });
+
+test('una función no exportada no se enlaza desde otro archivo por coincidencia de nombre', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  writeFileSync(join(fx.root, 'src/chat/panel.ts'), `const load = () => 1;\nexport function Panel() {\n  return load();\n}\n`);
+  writeFileSync(join(fx.root, 'src/app/shell.ts'), `import { Panel } from '../chat/panel';\nfunction load() {\n  return Panel();\n}\nexport function boot() {\n  return load();\n}\n`);
+  execFileSync('git', ['add', '-A'], { cwd: fx.root });
+  const g = await analyze({ root: fx.root, mode: 'map', head: 'WORKTREE', config: loadConfig(fx.root) });
+  assert.ok(!g.edges.some((e) => e.source.startsWith('src/app/shell.ts') && e.target === 'src/chat/panel.ts#load'));
+  assert.ok(g.edges.some((e) => e.source === 'src/app/shell.ts#boot' && e.target === 'src/app/shell.ts#load'));
+});

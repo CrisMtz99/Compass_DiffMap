@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2026-10-27 · Panel de código
+
+- **Panel de código redimensionable**: arrastrando su borde izquierdo, entre 380 px y el 70% de la ventana; doble clic restablece, ⤢ amplía al máximo. El ancho se recuerda.
+- **Ajustar líneas** (por defecto): las líneas largas se parten dentro del panel con sangría colgante, en Código y en Diff; el diff ahora también lleva resaltado de sintaxis.
+- **Fix de llamadas entre archivos**: una función de nivel superior no exportada ya no se enlaza desde otro archivo solo porque comparte nombre (p. ej. dos `load()` distintas).
+- Los controles de la barra superior ya no se parten en dos renglones cuando el panel es ancho.
+
 ## 0.2.0 — 2026-10-27 · Vista legible
 
 Rediseño de la app tras comparar con la referencia: la v0.1 encuadraba el árbol completo y dibujaba todas las aristas, y en PRs grandes era ilegible. Detalle y capturas en [docs/GUIA-UI.md](docs/GUIA-UI.md#por-qué-se-ve-así).

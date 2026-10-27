@@ -1,27 +1,27 @@
 # Arquitectura de Compass_DiffMap
 
-> Generado por Compass el 2026-10-27 sobre `1cc0ecbc1d`. Regenerar con `compass map --doc`.
+> Generado por Compass el 2026-10-27 sobre `6b70aac2ae`. Regenerar con `compass map --doc`.
 
 Compass: CLI + app web que convierten un repo, un diff o un PR en un mapa con zoom semántico, más una skill de Claude Code que agrega recorrido, resúmenes y riesgos.
 
 ## Resumen
 
-- **Archivos:** 61 · **Líneas:** 12,826
-- **Símbolos:** 194 · **Dependencias:** 223
+- **Archivos:** 62 · **Líneas:** 13,851
+- **Símbolos:** 202 · **Dependencias:** 233
 - **Lenguajes:** typescript (24), json (10), tsx (7), markdown (6), yaml (3), javascript (1), html (1), css (1), shell (1)
 
 ## Módulos
 
 | Módulo | Archivos | Líneas | Dependencias | Descripción |
 | --- | ---: | ---: | ---: | --- |
-| `docs/` | 8 | 5,446 | 0 | Documentación: guía de la interfaz (GUIA-UI.md), capturas y esta arquitectura. |
-| &nbsp;&nbsp;`docs/img/` | 6 | 5,266 | 0 | Capturas usadas en el README y la guía. |
-| `packages/` | 40 | 5,190 | 0 | Monorepo pnpm: motor, CLI y UI. |
-| &nbsp;&nbsp;`packages/web/` | 16 | 2,398 | 8 | App React + React Flow + ELK compilada a un solo index.html. |
-| &nbsp;&nbsp;&nbsp;&nbsp;`packages/web/src/` | 12 | 2,329 | 8 | Vista por niveles (model/), lienzo y nodos (canvas/), paneles laterales (panels/). |
-| &nbsp;&nbsp;`packages/core/` | 15 | 2,213 | 19 | Motor sin UI: git, parseo con tree-sitter, mapeo de hunks a símbolos, grafo con rollup e insights. |
-| &nbsp;&nbsp;&nbsp;&nbsp;`packages/core/src/` | 11 | 2,056 | 21 | Código del motor; schema.ts es el contrato de graph.json. |
-| &nbsp;&nbsp;&nbsp;&nbsp;`packages/core/test/` | 2 | 126 | 2 | Pruebas sobre un repo multi-lenguaje generado al vuelo. |
+| `docs/` | 9 | 6,339 | 0 | Documentación: guía de la interfaz (GUIA-UI.md), capturas y esta arquitectura. |
+| &nbsp;&nbsp;`docs/img/` | 7 | 6,149 | 0 | Capturas usadas en el README y la guía. |
+| `packages/` | 40 | 5,315 | 0 | Monorepo pnpm: motor, CLI y UI. |
+| &nbsp;&nbsp;`packages/web/` | 16 | 2,510 | 8 | App React + React Flow + ELK compilada a un solo index.html. |
+| &nbsp;&nbsp;&nbsp;&nbsp;`packages/web/src/` | 12 | 2,441 | 8 | Vista por niveles (model/), lienzo y nodos (canvas/), paneles laterales (panels/). |
+| &nbsp;&nbsp;`packages/core/` | 15 | 2,226 | 19 | Motor sin UI: git, parseo con tree-sitter, mapeo de hunks a símbolos, grafo con rollup e insights. |
+| &nbsp;&nbsp;&nbsp;&nbsp;`packages/core/src/` | 11 | 2,057 | 21 | Código del motor; schema.ts es el contrato de graph.json. |
+| &nbsp;&nbsp;&nbsp;&nbsp;`packages/core/test/` | 2 | 138 | 2 | Pruebas sobre un repo multi-lenguaje generado al vuelo. |
 | &nbsp;&nbsp;`packages/cli/` | 9 | 579 | 11 | Comando compass: map, diff, pr, insights, serve, export, init. |
 | &nbsp;&nbsp;&nbsp;&nbsp;`packages/cli/src/` | 6 | 541 | 11 | Comandos, servidor local con API para los controles de la app y export HTML. |
 | &nbsp;&nbsp;&nbsp;&nbsp;`packages/cli/scripts/` | 1 | 15 | 0 | Copia el build de la UI dentro del CLI. |
