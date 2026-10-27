@@ -4,6 +4,8 @@ import type { Cycle, DiffGraph, DiffNode, Insight, Insights, RuleViolation } fro
 
 const SYMBOL_KINDS = new Set(['function', 'method', 'class']);
 const ENTRY_NAMES = /^(main|index|app|server|cli|application|__main__|manage|wsgi|asgi)\.[a-z]+$|Application\.java$|Main\.java$/i;
+/** Código de pruebas: no cuenta como "llamado desde fuera" ni como punto de entrada de un cambio. */
+const TEST_CODE = /(^|\/)(test|tests|__tests__|spec|e2e|fixtures?|mocks?|__mocks__)\/|\.(test|spec|e2e)\.[a-z]+$|(^|\/)[^/]*(fixtures?|mocks?)[^/]*\.[a-z]+$|_test\.py$|Test\.java$/i;
 const TEST_OR_CONFIG = /(^|\/)(test|tests|__tests__|spec)\/|\.(test|spec)\.[a-z]+$|_test\.py$|Test\.java$|(^|\/)[^/]*\.config\.[a-z]+$|(^|\/)(setup|conftest)\.py$/i;
 
 export function computeInsights(g: DiffGraph, config: CompassConfig): Insights {
@@ -76,9 +78,9 @@ function diffInsights(
   const outsideCallers = new Map<string, Set<string>>();
   for (const e of g.edges) {
     const t = byId.get(e.target);
-    if (!t || !SYMBOL_KINDS.has(t.kind) || !changed(t)) continue;
+    if (!t || !SYMBOL_KINDS.has(t.kind) || !changed(t) || TEST_CODE.test(t.path)) continue;
     const sf = fileOf(e.source);
-    if (sf === t.path) continue;
+    if (sf === t.path || TEST_CODE.test(sf)) continue;
     if (!outsideCallers.has(t.id)) outsideCallers.set(t.id, new Set());
     outsideCallers.get(t.id)!.add(sf);
   }
@@ -95,7 +97,7 @@ function diffInsights(
     // Completar con símbolos exportados cambiados de mayor tamaño de cambio.
     const seen = new Set(entries.map((e) => e.id));
     const extra = g.nodes
-      .filter((n) => SYMBOL_KINDS.has(n.kind) && changed(n) && n.status !== 'deleted' && !seen.has(n.id) && n.exported && !(n.parentId && changed(byId.get(n.parentId)) && byId.get(n.parentId)!.kind === 'class' && byId.get(n.parentId)!.status === 'added'))
+      .filter((n) => SYMBOL_KINDS.has(n.kind) && changed(n) && n.status !== 'deleted' && !seen.has(n.id) && n.exported && !TEST_CODE.test(n.path) && !(n.parentId && changed(byId.get(n.parentId)) && byId.get(n.parentId)!.kind === 'class' && byId.get(n.parentId)!.status === 'added'))
       .map((n) => ({ id: n.id, score: round(Math.log2(1 + n.stats.added + n.stats.removed)), reason: `${statusWord(n.status)} y exportado (+${n.stats.added} −${n.stats.removed})` }));
     entries = entries.concat(extra.sort((a, b) => b.score - a.score));
   }

@@ -185,8 +185,22 @@ export async function analyze(opts: AnalyzeOptions): Promise<DiffGraph> {
   for (const node of nodes.values()) if (node.parentId && !nodes.has(node.parentId)) node.parentId = node.path;
 
   // ── Aristas ──
-  const tsDir = config.tsconfig.includes('/') ? config.tsconfig.slice(0, config.tsconfig.lastIndexOf('/')) : '.';
-  const ts = parseTsconfig(git.readFile(head, config.tsconfig), tsDir);
+  // Todos los tsconfig del repo con alias: el de cada paquete gana sobre el de la raíz.
+  // (tsconfig.json primero; si no define paths, tsconfig.app.json, como en proyectos Vite.)
+  const tsFiles = headFiles.filter((f) => /(^|\/)tsconfig(\.app)?\.json$/.test(f)).sort((a, b) => a.length - b.length || (a.endsWith('tsconfig.json') ? -1 : 1));
+  const tsTexts = git.readMany(head, tsFiles, 256_000);
+  const ts = new Map<string, NonNullable<ReturnType<typeof parseTsconfig>>>();
+  for (const f of tsFiles) {
+    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
+    if (ts.has(dir)) continue;
+    const parsed = parseTsconfig(tsTexts.get(f), dir || '.');
+    if (parsed && Object.keys(parsed.paths).length + (parsed.baseUrl ? 1 : 0) > 0) ts.set(dir, { ...parsed, baseUrl: parsed.baseUrl.replace(/^\.\/?/, '') });
+  }
+  if (!ts.size) {
+    const tsDir = config.tsconfig.includes('/') ? config.tsconfig.slice(0, config.tsconfig.lastIndexOf('/')) : '.';
+    const root = parseTsconfig(git.readFile(head, config.tsconfig), tsDir);
+    if (root) ts.set('', root);
+  }
   const pkgFiles = headFiles.filter((f) => f === 'package.json' || f.endsWith('/package.json'));
   const pkgJsons = new Map<string, string>();
   for (const [f, t] of git.readMany(head, pkgFiles, 256_000)) if (t) pkgJsons.set(f, t);

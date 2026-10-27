@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 — 2026-10-27 · Primer repo real (facturador)
+
+- **Alias de tsconfig por paquete**: en monorepos cada archivo usa el `tsconfig.json` (o `tsconfig.app.json`) más cercano, p. ej. `"@/*": ["./src/*"]` de `packages/web`. Antes solo se leía el de la raíz y los imports con `@/` quedaban sin resolver (componentes marcados como huérfanos).
+- **Código de pruebas fuera de los entry points**: llamadas desde tests, `e2e/`, fixtures y mocks no cuentan como "llamado desde fuera", y los fixtures cambiados no aparecen como punto de entrada.
+
 ## 0.2.1 — 2026-10-27 · Panel de código
 
 - **Panel de código redimensionable**: arrastrando su borde izquierdo, entre 380 px y el 70% de la ventana; doble clic restablece, ⤢ amplía al máximo. El ancho se recuerda.

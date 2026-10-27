@@ -37,6 +37,20 @@ export class Resolver {
   private javaIndex = new Map<string, string>();
   private javaPackages = new Map<string, string[]>();
 
+  private tsByDir = new Map<string, TsPaths>();
+
+  /** El tsconfig más cercano que define alias para este archivo (subiendo carpetas hasta la raíz). */
+  private tsFor(file: string): TsPaths | undefined {
+    let d = dirname(file);
+    for (;;) {
+      const key = d === '.' ? '' : d;
+      const hit = this.tsByDir.get(key);
+      if (hit) return hit;
+      if (!key) return undefined;
+      d = dirname(d);
+    }
+  }
+
   /** Paquetes del propio repo (monorepo): nombre → directorio. */
   private workspace = new Map<string, { dir: string; entries: string[] }>();
 
@@ -44,10 +58,13 @@ export class Resolver {
     allFiles: Iterable<string>,
     parsed: Map<string, ParsedFile>,
     private sourceRoots: string[],
-    private ts?: TsPaths,
+    ts?: TsPaths | Map<string, TsPaths>,
     packageJsons: Map<string, string> = new Map(),
   ) {
     this.files = new Set(allFiles);
+    // tsconfig por directorio (monorepos: cada paquete tiene sus alias, p. ej. "@/*" en packages/web)
+    if (ts instanceof Map) this.tsByDir = ts;
+    else if (ts) this.tsByDir.set('', ts);
     for (const [path, text] of packageJsons) {
       try {
         const pkg = JSON.parse(text);
@@ -111,8 +128,9 @@ export class Resolver {
   private resolveJs(from: string, spec: string): string | undefined {
     if (spec.startsWith('.')) return this.tryFile(join(dirname(from), spec));
     if (spec.startsWith('/')) return this.tryFile(spec.slice(1));
-    if (this.ts) {
-      for (const [pattern, targets] of Object.entries(this.ts.paths)) {
+    const ts = this.tsFor(from);
+    if (ts) {
+      for (const [pattern, targets] of Object.entries(ts.paths)) {
         const star = pattern.indexOf('*');
         let rest: string | undefined;
         if (star < 0) rest = pattern === spec ? '' : undefined;
@@ -123,11 +141,11 @@ export class Resolver {
         }
         if (rest === undefined) continue;
         for (const t of targets) {
-          const hit = this.tryFile(join(this.ts.baseUrl, t.replace('*', rest)));
+          const hit = this.tryFile(join(ts.baseUrl, t.replace('*', rest)));
           if (hit) return hit;
         }
       }
-      const viaBase = this.tryFile(join(this.ts.baseUrl, spec));
+      const viaBase = this.tryFile(join(ts.baseUrl, spec));
       if (viaBase) return viaBase;
     }
     // paquete del mismo monorepo: @org/pkg o @org/pkg/sub/ruta

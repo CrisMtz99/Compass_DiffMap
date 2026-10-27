@@ -87,3 +87,30 @@ test('una función no exportada no se enlaza desde otro archivo por coincidencia
   assert.ok(!g.edges.some((e) => e.source.startsWith('src/app/shell.ts') && e.target === 'src/chat/panel.ts#load'));
   assert.ok(g.edges.some((e) => e.source === 'src/app/shell.ts#boot' && e.target === 'src/app/shell.ts#load'));
 });
+
+test('alias de tsconfig por paquete (monorepo) y fixtures fuera de los entry points', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const { mkdirSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const w = (p: string, c: string) => {
+    mkdirSync(join(fx.root, p, '..'), { recursive: true });
+    writeFileSync(join(fx.root, p), c);
+  };
+  w('packages/web/tsconfig.json', `{\n  "extends": "../../tsconfig.json",\n  "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["./src/*"] } }\n}\n`);
+  w('packages/web/src/components/ui/button.tsx', `export function Button() {\n  return null;\n}\n`);
+  w('packages/web/src/App.tsx', `import { Button } from '@/components/ui/button';\nexport function App() {\n  return Button();\n}\n`);
+  execFileSync('git', ['add', '-A'], { cwd: fx.root });
+  const g = await analyze({ root: fx.root, mode: 'map', head: 'WORKTREE', config: loadConfig(fx.root) });
+  assert.ok(hasEdge(g, 'packages/web/src/App.tsx', 'packages/web/src/components/ui/button.tsx', 'import'), 'alias @/ del paquete web');
+  assert.ok(!(g.insights.orphans ?? []).includes('packages/web/src/components/ui/button.tsx'));
+  // el alias @utils de la raíz sigue funcionando para archivos fuera de packages/web
+  assert.ok(hasEdge(g, 'src/app/main.ts', 'src/utils/format.ts', 'import'));
+
+  // un cambio en un fixture llamado por pruebas no es entry point
+  w('src/test/e2e-fixtures.ts', `export function crearOv() {\n  return 1;\n}\n`);
+  w('src/test/a.test.ts', `import { crearOv } from './e2e-fixtures';\ncrearOv();\n`);
+  w('src/test/b.test.ts', `import { crearOv } from './e2e-fixtures';\ncrearOv();\n`);
+  execFileSync('git', ['add', '-A'], { cwd: fx.root });
+  const d = await analyze({ root: fx.root, mode: 'diff', base: 'feature', head: 'WORKTREE', config: loadConfig(fx.root) });
+  assert.ok(!d.insights.entryPoints.some((e) => e.id.includes('e2e-fixtures')), JSON.stringify(d.insights.entryPoints.map((e) => e.id)));
+});
