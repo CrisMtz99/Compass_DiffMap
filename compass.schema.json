@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "compass.config.json",
+  "type": "object",
+  "properties": {
+    "base": { "type": "string", "description": "Rama o commit base para `compass diff` (default origin/main)" },
+    "head": { "type": "string", "description": "Commit head; WORKTREE = árbol de trabajo con cambios sin commitear (default)" },
+    "include": { "type": "array", "items": { "type": "string" }, "description": "Globs a incluir (default **/*)" },
+    "exclude": { "type": "array", "items": { "type": "string" }, "description": "Globs a excluir; se suman a los default (node_modules, dist, build…)" },
+    "languages": { "type": "array", "items": { "enum": ["typescript", "tsx", "javascript", "python", "java"] } },
+    "sourceRoots": { "type": "array", "items": { "type": "string" }, "description": "Raíces para resolver imports absolutos de Python y Java" },
+    "tsconfig": { "type": "string", "description": "tsconfig para alias de paths (default tsconfig.json)" },
+    "maxFiles": { "type": "integer" },
+    "maxFileBytes": { "type": "integer" },
+    "scoring": {
+      "type": "object",
+      "properties": {
+        "hotspotTop": { "type": "integer" },
+        "entryTop": { "type": "integer" },
+        "weightLines": { "type": "number" },
+        "weightEdges": { "type": "number" }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "description": "Reglas de arquitectura verificadas en cada análisis",
+      "items": {
+        "type": "object",
+        "required": ["name", "from", "disallow"],
+        "properties": {
+          "name": { "type": "string" },
+          "from": { "type": "string", "description": "Glob de archivos origen" },
+          "disallow": { "type": "string", "description": "Glob de archivos que el origen no puede importar" }
+        }
+      }
+    },
+    "github": { "type": "object", "properties": { "tokenEnv": { "type": "string" }, "repo": { "type": "string", "description": "owner/nombre" } } },
+    "gitlab": { "type": "object", "properties": { "url": { "type": "string" }, "projectId": {}, "tokenEnv": { "type": "string" } } },
+    "output": { "type": "string", "description": "Carpeta de salida (default .compass)" },
+    "port": { "type": "integer", "description": "Puerto de `compass serve` (default 4777)" }
+  }
+}

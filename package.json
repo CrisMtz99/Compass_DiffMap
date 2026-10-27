@@ -1,0 +1,18 @@
+{
+  "name": "compass-diffmap",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Compass: mapa navegable de repositorios y diffs (DiffMap) con zoom sem\u00e1ntico",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "pnpm --filter @compass/core build && pnpm --filter @compass/web build && pnpm --filter @compass/cli build",
+    "dev:web": "pnpm --filter @compass/web dev",
+    "test": "pnpm --filter @compass/core test",
+    "compass": "node packages/cli/dist/index.js",
+    "typecheck": "pnpm --filter @compass/web exec tsc --noEmit -p tsconfig.json && pnpm --filter @compass/core exec tsc --noEmit -p tsconfig.json && pnpm --filter @compass/cli exec tsc --noEmit -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

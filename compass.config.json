@@ -1,0 +1,8 @@
+{
+  "$schema": "./compass.schema.json",
+  "base": "origin/main",
+  "rules": [
+    { "name": "el motor no depende de la UI", "from": "packages/core/**", "disallow": "packages/web/**" },
+    { "name": "el motor no depende del CLI", "from": "packages/core/**", "disallow": "packages/cli/**" }
+  ]
+}
