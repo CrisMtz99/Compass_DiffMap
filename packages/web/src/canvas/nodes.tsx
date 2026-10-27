@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react';
-import { Handle, NodeToolbar, Position, type NodeProps } from '@xyflow/react';
+import { Handle, NodeToolbar, Position, useStore, type NodeProps } from '@xyflow/react';
 import hljs from 'highlight.js/lib/core';
 import typescript from 'highlight.js/lib/languages/typescript';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -19,6 +19,8 @@ hljs.registerLanguage('java', java);
 
 export interface NodeData extends Record<string, unknown> {
   v: ViewNode;
+  /** Profundidad dentro de la vista (para teñir el anidado). */
+  depth?: number;
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -137,12 +139,15 @@ const hoverProps = (c: ReturnType<typeof useCanvas>, id: string) => ({
   },
 });
 
-export const ContainerNode = memo(({ data }: NodeProps) => {
+export const ContainerNode = memo(({ data, width }: NodeProps) => {
   const v = (data as NodeData).v;
+  const depth = (data as NodeData).depth ?? 0;
+  // Etiqueta grande solo si la caja mide en pantalla lo suficiente para que no se encime con otras.
+  const showFar = useStore((s) => s.transform[2] < 0.5 && (width ?? 0) * s.transform[2] > 120);
   const n = v.node!;
   const st = useNodeState(n.id);
   return (
-    <div className={cls(n, st, 'cnode')}>
+    <div className={cls(n, st, 'cnode')} data-depth={Math.min(depth, 5)}>
       {handles}
       <HoverCard n={n} visible={st.hovered} />
       <div className="cnode-head" {...hoverProps(st.c, n.id)}>
@@ -156,6 +161,12 @@ export const ContainerNode = memo(({ data }: NodeProps) => {
         <Stats n={n} />
         {st.tour && <span className="tour-badge">{st.tour}</span>}
       </div>
+      {showFar && (
+        <div className="cnode-far" {...hoverProps(st.c, n.id)}>
+          <span className="dot" />
+          {v.label ?? n.name}
+        </div>
+      )}
     </div>
   );
 });

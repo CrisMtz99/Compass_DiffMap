@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import type { DiffGraph } from '@compass/core';
 import { clearSourceCache, fetchGraph, fetchStatus, isStatic, type GraphWithErrors } from './api';
-import { Canvas } from './canvas/Canvas';
+import { Canvas, type EdgeMode } from './canvas/Canvas';
 import { Ctx, type CanvasCtx, type Trace } from './canvas/context';
 import { Icon } from './canvas/icons';
 import { buildIndex, buildView, exploreLevel, focusTarget, LEVEL_LABEL, LEVELS, type Level } from './model/view';
@@ -86,6 +86,8 @@ function Loaded({ graph, tab, setTab, reload }: { graph: GraphWithErrors; tab: S
   const [pos, setPos] = useState(0);
   const place = history[pos];
   const [exact, setExact] = useState(false);
+  // null = automático: en la vista completa solo al pasar el mouse; al aislar, las cambiadas (diff).
+  const [edgeMode, setEdgeMode] = useState<EdgeMode | null>(null);
   const [hover, setHoverRaw] = useState<string | null>(null);
   const [traceReq, setTraceReq] = useState<{ nodeId: string; dir: 'callers' | 'deps' } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -140,6 +142,17 @@ function Loaded({ graph, tab, setTab, reload }: { graph: GraphWithErrors; tab: S
     const edges = new Set(view.edges.filter((ve) => ve.members.some((m) => members.has(m.id))).map((ve) => ve.id));
     return { ...traceReq, related, edges };
   }, [traceReq, graph.edges, view, idx]);
+
+  const effectiveEdgeMode: EdgeMode = edgeMode ?? (isDiff && place.scope !== root ? 'changed' : 'hover');
+
+  const anchorId = useMemo(() => {
+    const ids = [...(graph.insights.reviewTour ?? []).map((t) => t.nodeId), ...graph.insights.hotspots.map((h) => h.id), ...graph.insights.entryPoints.map((e) => e.id)];
+    for (const id of ids) {
+      const v = view.resolve(id);
+      if (v && v !== view.root.id) return v;
+    }
+    return null;
+  }, [graph, view]);
 
   const tourSteps = useMemo(() => new Map((graph.insights.reviewTour ?? []).map((s) => [s.nodeId, s.step])), [graph]);
 
@@ -200,71 +213,76 @@ function Loaded({ graph, tab, setTab, reload }: { graph: GraphWithErrors; tab: S
                 {Icon.plus}
               </button>
             </div>
-            <div className="banner">
-              <div className="banner-row">
-                {isDiff ? (
-                  <span className="banner-title">
-                    {Icon.branch}
-                    {graph.meta.pr ? (
-                      <a href={graph.meta.pr.url} target="_blank" rel="noreferrer">
-                        PR #{graph.meta.pr.number}
-                        {graph.meta.pr.title !== `PR #${graph.meta.pr.number}` ? ` · ${graph.meta.pr.title}` : ''}
-                      </a>
-                    ) : (
-                      <>
-                        Diff vs <code>{graph.meta.base}</code> <span className="muted">{short(graph.meta.baseSha)}</span> → {graph.meta.head === 'WORKTREE' ? 'árbol de trabajo' : <code>{short(graph.meta.headSha)}</code>}
-                      </>
-                    )}
-                  </span>
-                ) : (
-                  <span className="banner-title">
-                    {Icon.compass} Mapa de <b>{graph.meta.repo}</b> <span className="muted">{short(graph.meta.headSha)}</span>
-                  </span>
-                )}
-                {place.scope !== root && (
-                  <>
-                    <span className="pill">Aislado</span>
-                    <button className="link" onClick={() => go({ scope: root, level: 'architecture' })}>
-                      {Icon.close} Dejar de aislar
-                    </button>
-                  </>
-                )}
-              </div>
-              <div className="banner-row">
-                {isDiff && (
-                  <div className="seg">
-                    <button className={exact ? 'on' : ''} onClick={() => setExact(true)} title="Solo lo que cambió">
-                      Exact
-                    </button>
-                    <button className={!exact ? 'on' : ''} onClick={() => setExact(false)} title="Incluye lo que no cambió, atenuado">
-                      With Context
-                    </button>
-                  </div>
-                )}
-                <div className="crumbs">
-                  {crumbs.map((c, i) => (
-                    <span key={c.id}>
-                      {i > 0 && <span className="sep">/</span>}
-                      <button className="crumb" onClick={() => go({ scope: c.id, level: c.kind === 'file' ? 'module' : place.level })}>
-                        {c.name}
-                      </button>
-                    </span>
-                  ))}
+            <div className="toolbar filters">
+              {isDiff && (
+                <div className="seg">
+                  <button className={exact ? 'on' : ''} onClick={() => setExact(true)} title="Solo lo que cambió">
+                    Exact
+                  </button>
+                  <button className={!exact ? 'on' : ''} onClick={() => setExact(false)} title="Lo que cambió más sus vecinos directos">
+                    With Context
+                  </button>
                 </div>
+              )}
+              <span className="tb-label">Aristas</span>
+              <div className="seg" title="Qué dependencias dibujar">
+                {(isDiff ? (['hover', 'changed', 'all'] as EdgeMode[]) : (['hover', 'all'] as EdgeMode[])).map((m) => (
+                  <button key={m} className={effectiveEdgeMode === m ? 'on' : ''} onClick={() => setEdgeMode(m)}>
+                    {m === 'changed' ? 'Cambiadas' : m === 'hover' ? 'Al pasar' : 'Todas'}
+                  </button>
+                ))}
               </div>
+            </div>
+            <div className="contextbar">
+              {isDiff ? (
+                <span className="banner-title">
+                  {Icon.branch}
+                  {graph.meta.pr ? (
+                    <a href={graph.meta.pr.url} target="_blank" rel="noreferrer">
+                      PR #{graph.meta.pr.number}
+                      {graph.meta.pr.title !== `PR #${graph.meta.pr.number}` ? ` · ${graph.meta.pr.title}` : ''}
+                    </a>
+                  ) : (
+                    <>
+                      <code>{graph.meta.base}</code> <span className="muted">{short(graph.meta.baseSha)}</span> → {graph.meta.head === 'WORKTREE' ? 'árbol de trabajo' : <code>{short(graph.meta.headSha)}</code>}
+                    </>
+                  )}
+                </span>
+              ) : (
+                <span className="banner-title">
+                  {Icon.compass} Mapa <span className="muted">{short(graph.meta.headSha)}</span>
+                </span>
+              )}
+              <span className="cb-sep" />
+              <div className="crumbs">
+                {crumbs.map((c, i) => (
+                  <span key={c.id}>
+                    {i > 0 && <span className="sep">/</span>}
+                    <button className={`crumb ${i === crumbs.length - 1 ? 'cur' : ''}`} onClick={() => go({ scope: c.id, level: c.kind === 'file' ? 'module' : place.level })}>
+                      {c.name}
+                    </button>
+                  </span>
+                ))}
+              </div>
+              {place.scope !== root && (
+                <button className="link" onClick={() => go({ scope: root, level: 'architecture' })}>
+                  {Icon.close} Dejar de aislar
+                </button>
+              )}
               {trace && (
-                <div className="banner-row trace-row">
-                  <span>
-                    {trace.dir === 'callers' ? 'Callers de' : 'Dependencias de'} <b>{idx.byId.get(trace.nodeId)?.name}</b> · {trace.related.size - 1} nodos
+                <>
+                  <span className="cb-sep" />
+                  <span className="trace-row">
+                    {trace.dir === 'callers' ? 'Callers de' : 'Dependencias de'} <b>{idx.byId.get(trace.nodeId)?.name}</b> · {trace.related.size - 1}
                   </span>
                   <button className="link" onClick={() => setTraceReq(null)}>
                     {Icon.close} limpiar
                   </button>
-                </div>
+                </>
               )}
             </div>
           </div>
-          <Canvas view={view} focusId={place.focus} onLayout={setLayoutMs} />
+          <Canvas view={view} focusId={place.focus} anchorId={anchorId} edgeMode={effectiveEdgeMode} onLayout={setLayoutMs} />
           <div className="legend">
             {isDiff && (
               <>

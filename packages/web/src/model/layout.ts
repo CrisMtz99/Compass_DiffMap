@@ -38,7 +38,7 @@ export function leafSize(v: ViewNode): { width: number; height: number } {
   }
   const isSymbol = !['repo', 'directory', 'file'].includes(n.kind);
   if (isSymbol && (n.kind === 'method' || n.kind === 'function' || n.kind === 'class' || n.kind === 'interface' || n.kind === 'enum' || n.kind === 'type')) {
-    return { width: Math.min(320, Math.max(150, textW(n.name, 8) + 60)), height: 44 };
+    return { width: Math.min(340, Math.max(150, textW(n.name, 8.4) + 84)), height: 44 };
   }
   return { width: Math.min(280, Math.max(96, textW(n.name, 7.8) + 52)), height: 28 };
 }
@@ -87,13 +87,16 @@ export async function layoutView(view: View, idx: Index): Promise<Map<string, Bo
       ? {
           'elk.algorithm': 'layered',
           'elk.direction': 'RIGHT',
-          'elk.layered.spacing.nodeNodeBetweenLayers': '44',
-          'elk.spacing.nodeNode': '14',
+          'elk.layered.spacing.nodeNodeBetweenLayers': '56',
+          'elk.spacing.nodeNode': '18',
+          'elk.aspectRatio': '1.4',
+          'elk.separateConnectedComponents': 'true',
+          'elk.spacing.componentComponent': '24',
           'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
           'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
         }
-      : { 'elk.algorithm': 'rectpacking', 'elk.aspectRatio': '1.8', 'elk.spacing.nodeNode': '12', 'elk.rectpacking.widthApproximation.optimizationGoal': 'ASPECT_RATIO_DRIVEN' };
-    layoutOptions['elk.padding'] = `[top=${HEADER_H + 8},left=12,bottom=12,right=12]`;
+      : { 'elk.algorithm': 'rectpacking', 'elk.aspectRatio': '1.35', 'elk.spacing.nodeNode': '14', 'elk.rectpacking.widthApproximation.optimizationGoal': 'ASPECT_RATIO_DRIVEN' };
+    layoutOptions['elk.padding'] = `[top=${HEADER_H + 12},left=16,bottom=16,right=16]`;
     layoutOptions['elk.nodeSize.constraints'] = 'MINIMUM_SIZE';
     layoutOptions['elk.nodeSize.minimum'] = `(${minW}, 60)`;
     return {

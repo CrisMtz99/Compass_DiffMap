@@ -64,18 +64,9 @@ function InsightsPanel({ graph, onFocus }: { graph: G; onFocus: (id: string) => 
   const byId = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n])), [graph]);
   const ins = graph.insights;
   const isMap = graph.meta.mode === 'map';
+  const hasTour = !!ins.reviewTour?.length;
   const r = graph.nodes.find((n) => n.kind === 'repo')!.stats;
-  const list = (items: Insight[]) => (
-    <ul className="ilist">
-      {items.map((i) => (
-        <li key={i.id}>
-          <NodeRef n={byId.get(i.id)} onFocus={onFocus} />
-          <div className="why">{i.reason}</div>
-          {ins.summaries?.[i.id] && <div className="why ai">{ins.summaries[i.id]}</div>}
-        </li>
-      ))}
-    </ul>
-  );
+  const list = (items: Insight[]) => <InsightList items={items} byId={byId} summaries={ins.summaries} onFocus={onFocus} />;
   return (
     <div className="panel">
       <h2>{isMap ? 'Mapa del repositorio' : graph.meta.pr ? `PR #${graph.meta.pr.number}` : 'Diff'}</h2>
@@ -145,17 +136,14 @@ function InsightsPanel({ graph, onFocus }: { graph: G; onFocus: (id: string) => 
           </ul>
         </section>
       )}
-      <section>
-        <h3>{isMap ? 'Hubs (lo más usado)' : 'Hotspots (por dónde pasan los cambios)'}</h3>
+      <Section title={isMap ? 'Hubs' : 'Hotspots'} count={ins.hotspots.length} defaultOpen={!hasTour}>
         {ins.hotspots.length ? list(ins.hotspots) : <p className="muted">Nada que destacar.</p>}
-      </section>
-      <section>
-        <h3>Entry points</h3>
+      </Section>
+      <Section title="Entry points" count={ins.entryPoints.length} defaultOpen={!hasTour && isMap}>
         {ins.entryPoints.length ? list(ins.entryPoints) : <p className="muted">No se detectaron.</p>}
-      </section>
+      </Section>
       {(ins.cycles || ins.orphans || (ins.violations && ins.violations.length > 0)) && (
-        <section>
-          <h3>Salud de la estructura</h3>
+        <Section title="Salud de la estructura" defaultOpen={isMap}>
           {ins.violations && ins.violations.length > 0 && (
             <>
               <h4>Violaciones de reglas ({ins.violations.length})</h4>
@@ -195,11 +183,10 @@ function InsightsPanel({ graph, onFocus }: { graph: G; onFocus: (id: string) => 
               </ul>
             </>
           )}
-        </section>
+        </Section>
       )}
       {ins.languages && (
-        <section>
-          <h3>Lenguajes</h3>
+        <Section title="Lenguajes" defaultOpen={false}>
           <div className="langs">
             {Object.entries(ins.languages)
               .sort((a, b) => b[1] - a[1])
@@ -209,12 +196,52 @@ function InsightsPanel({ graph, onFocus }: { graph: G; onFocus: (id: string) => 
                 </span>
               ))}
           </div>
-        </section>
+        </Section>
       )}
       <p className="muted foot">
         Generado {new Date(graph.meta.generatedAt).toLocaleString('es-MX')} · {graph.meta.durationMs} ms
       </p>
     </div>
+  );
+}
+
+function Section({ title, count, defaultOpen = true, children }: { title: string; count?: number; defaultOpen?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section>
+      <button className={`section-h ${open ? '' : 'closed'}`} onClick={() => setOpen(!open)}>
+        <span>
+          <span className="chev">▾</span>
+          {title}
+        </span>
+        {count !== undefined && <span className="count">{count}</span>}
+      </button>
+      {open && children}
+    </section>
+  );
+}
+
+function InsightList({ items, byId, summaries, onFocus }: { items: Insight[]; byId: Map<string, DiffNode>; summaries?: Record<string, string>; onFocus: (id: string) => void }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.slice(0, 5);
+  return (
+    <>
+      <ul className="ilist">
+        {shown.map((i) => (
+          <li key={i.id}>
+            <NodeRef n={byId.get(i.id)} onFocus={onFocus} />
+            <div className="why" title={i.reason}>
+              {summaries?.[i.id] ?? i.reason}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {items.length > 5 && (
+        <button className="more-link" onClick={() => setAll(!all)}>
+          {all ? 'ver menos' : `ver ${items.length - 5} más`}
+        </button>
+      )}
+    </>
   );
 }
 

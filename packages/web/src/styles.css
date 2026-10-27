@@ -232,3 +232,100 @@ a { color: var(--dep); text-decoration: none; }
    para que el cuerpo de los contenedores siga dejando pasar el arrastre del lienzo. */
 .cnode-head, .chip, .sym, .codenode, .more-chip { pointer-events: all; }
 .more-chip.quiet { opacity: 0.55; font-size: 11px; }
+
+/* ════════════ v0.2 · limpieza visual ════════════
+   Principios (tomados de la referencia): el estado lo dice el punto, no el borde;
+   el anidado se lee por tinte de fondo; pocas aristas y tenues hasta que el mouse las pide;
+   lejos = solo módulos, cerca = todo el detalle. */
+:root {
+  --edge: #4a515c;
+  --edge-changed: #6f7884;
+  --edge-hi: #8b96ff;
+  --box-line: #262b33;
+  --box-line-strong: #343a45;
+}
+.cnode { border-color: var(--box-line) !important; background: transparent; box-shadow: none; }
+.cnode[data-depth='1'] { background: rgba(255, 255, 255, 0.012); }
+.cnode[data-depth='2'] { background: rgba(255, 255, 255, 0.022); }
+.cnode[data-depth='3'] { background: rgba(255, 255, 255, 0.03); }
+.cnode[data-depth='4'], .cnode[data-depth='5'] { background: rgba(255, 255, 255, 0.038); }
+.cnode.s-modified, .cnode.s-added, .cnode.s-deleted { border-color: var(--box-line-strong) !important; }
+.cnode.s-unchanged:not(.mode-map) { border-style: dashed; }
+.cnode.hovered, .cnode.trace-focus { border-color: #56d4dd !important; box-shadow: 0 0 0 1px rgba(86, 212, 221, 0.5); }
+.cnode-head { height: 32px; border-bottom: 0; gap: 7px; }
+.cnode-head .name { font-size: 13px; letter-spacing: -0.01em; }
+.cnode-head .kind { display: none; }
+.cnode-head svg { opacity: 0.7; }
+
+.chip, .sym { background: #151920; border-color: var(--box-line) !important; }
+.chip { padding: 0 9px; }
+.chip .leaf-line svg { display: none; }
+.chip.s-unchanged:not(.mode-map), .sym.s-unchanged:not(.mode-map) { opacity: 0.5; background: transparent; }
+.chip.s-deleted, .sym.s-deleted { opacity: 0.75; }
+.sym { background: #161b23; }
+.sym .leaf-sub .kind { color: var(--faint); }
+.codenode { border-color: var(--box-line-strong) !important; }
+.chip.hovered, .sym.hovered, .codenode.hovered, .selected { border-color: #56d4dd !important; box-shadow: 0 0 0 1px rgba(86, 212, 221, 0.5); }
+.more-chip { border-color: var(--box-line) !important; background: transparent; }
+.dot { width: 6px; height: 6px; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.25); }
+.mode-map .dot { display: none; }
+
+/* etiqueta grande de contenedores para la vista lejana */
+.cnode-far { display: none; }
+
+/* ── nivel de detalle por zoom ── */
+.lod-mid .leaf-sub { display: none; }
+.lod-mid .sym { justify-content: center; }
+.lod-mid .cnode-head .stats .st-dep { display: none; }
+
+.lod-far .cnode-head { visibility: hidden; }
+.lod-far .cnode-far {
+  display: flex; align-items: center; gap: 0.35em; position: absolute; top: 0; left: 0; max-width: 100%;
+  padding: 0.25em 0.45em; font-weight: 650; color: #e6e9ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: clamp(13px, calc(12px / var(--z)), 140px); line-height: 1.1; pointer-events: all;
+}
+.lod-far .cnode-far .dot { width: 0.42em; height: 0.42em; }
+.lod-far .chip .leaf-line, .lod-far .sym .leaf-line, .lod-far .sym .leaf-sub, .lod-far .more-chip { visibility: hidden; }
+.lod-far .chip, .lod-far .sym { opacity: 1 !important; border: 0 !important; }
+.lod-far .chip.s-added, .lod-far .sym.s-added { background: rgba(63, 185, 80, 0.55); }
+.lod-far .chip.s-modified, .lod-far .sym.s-modified { background: rgba(210, 153, 34, 0.55); }
+.lod-far .chip.s-deleted, .lod-far .sym.s-deleted { background: rgba(248, 81, 73, 0.5); }
+.lod-far .chip.s-unchanged, .lod-far .sym.s-unchanged { background: #20252d; }
+.lod-far .code-body { visibility: hidden; }
+
+/* ── panel lateral más ligero ── */
+.side { width: 300px; }
+.panel { padding: 14px 14px 24px; }
+.kpis { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.kpis div { padding: 6px 8px; }
+.kpis b { font-size: 14px; }
+.kpis span { font-size: 10px; }
+.ilist li, .tour li { margin-bottom: 6px; }
+.why { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 11px; line-height: 1.35; }
+.ref { padding: 3px 6px; }
+.panel h3 { margin: 16px 0 6px; }
+.more-link { color: var(--muted); font-size: 11.5px; padding: 2px 6px; }
+.more-link:hover { color: var(--text); }
+
+/* ── barra superior ── */
+.topbar { padding: 8px 12px; gap: 8px; }
+.banner { border-color: var(--line); padding: 6px 10px; }
+.edgemode { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11.5px; }
+.topbar { align-items: center; }
+.filters { gap: 8px; padding: 4px 8px; }
+.tb-label { color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-left: 4px; }
+.contextbar { flex-basis: 100%; display: flex; align-items: center; gap: 10px; min-height: 22px; padding: 0 4px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.contextbar .banner-title { font-size: 12px; color: var(--text); }
+.contextbar .banner-title a { color: var(--text); }
+.cb-sep { width: 1px; height: 14px; background: var(--line-2); }
+.crumb.cur { color: var(--text); }
+.trace-row { color: #b4bcff; }
+.section-h { display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 6px; font-weight: 600; }
+.section-h:hover { color: var(--text); }
+.section-h .count { color: var(--faint); font-weight: 500; }
+.section-h .chev { transition: transform 0.15s; display: inline-block; margin-right: 6px; }
+.section-h.closed .chev { transform: rotate(-90deg); }
+/* fichas sin cambios: atenuadas por color (no por opacidad) para que sigan tapando las aristas */
+.chip.s-unchanged:not(.mode-map), .sym.s-unchanged:not(.mode-map) { opacity: 1; background: #12151a; color: var(--muted); }
+.chip.s-unchanged:not(.mode-map) .name, .sym.s-unchanged:not(.mode-map) .name { color: #6b737e; }
+.lod-far .cnode-head + .cnode-far, .lod-far .cnode-far { background: linear-gradient(90deg, rgba(13,15,18,0.85), rgba(13,15,18,0)); border-radius: 6px; }

@@ -123,8 +123,14 @@ export function buildView(g: DiffGraph, idx: Index, opts: ViewOptions): View {
       }
     }
   }
-  const isQuiet = (parent: DiffNode, k: DiffNode) =>
-    isDiff && !exact && k.status === 'unchanged' && !neighbors.has(k.id) && (parent.kind === 'directory' || parent.kind === 'repo');
+  // Sin cambios y sin relación con los cambios. Dentro de archivos solo se agrupa si el archivo no es el foco
+  // (en Module/Code del archivo aislado se ven todos sus miembros, atenuados, como en la referencia).
+  const isQuiet = (parent: DiffNode, k: DiffNode, parentIsScope: boolean) =>
+    isDiff &&
+    !exact &&
+    k.status === 'unchanged' &&
+    !neighbors.has(k.id) &&
+    (parent.kind === 'directory' || parent.kind === 'repo' || (parent.kind === 'file' && !parentIsScope));
 
   const visibleKids = (n: DiffNode) =>
     (idx.children.get(n.id) ?? []).filter((k) => {
@@ -158,7 +164,7 @@ export function buildView(g: DiffGraph, idx: Index, opts: ViewOptions): View {
       return v;
     }
     // archivos/carpetas sin cambios y sin relación con los cambios → un chip "+N sin cambios"
-    const quiet = kids.filter((k) => isQuiet(n, k));
+    const quiet = kids.filter((k) => isQuiet(n, k, isScope));
     if (quiet.length) kids = kids.filter((k) => !quiet.includes(k));
     // contenedores primero; hojas limitadas con un chip "+N"
     const containers = kids.filter((k) => (idx.children.get(k.id)?.length ?? 0) > 0 && expandKinds.has(k.kind));
