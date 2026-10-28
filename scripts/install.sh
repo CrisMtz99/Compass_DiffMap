@@ -4,6 +4,7 @@
 #      COMPASS_REF=<rama|tag> para una versión concreta. COMPASS_SKILL=project para copiar la skill al repo actual.
 set -euo pipefail
 
+START="$(pwd -P)" # antes del cd: COMPASS_SKILL=project copia la skill aquí
 REPO="${COMPASS_REPO:-https://github.com/CrisMtz99/Compass_DiffMap.git}"
 REF="${COMPASS_REF:-main}"
 DIR="${COMPASS_HOME:-$HOME/.compass}"
@@ -37,7 +38,7 @@ chmod +x "$BIN/compass"
 
 # Skill de Claude Code: personal (~/.claude/skills) o del proyecto actual (.claude/skills)
 if [ "${COMPASS_SKILL:-user}" = "project" ]; then
-  SKILL_DST="$(pwd -P)/.claude/skills/compass"
+  SKILL_DST="$START/.claude/skills/compass"
 else
   SKILL_DST="$HOME/.claude/skills/compass"
 fi
