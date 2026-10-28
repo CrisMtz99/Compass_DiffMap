@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { Command } from 'commander';
-import { Git, loadConfig, renderArchitectureDoc, validateInsights, type DiffGraph, type Mode } from '@compass/core';
+import { Git, loadConfig, readJsonFile, renderArchitectureDoc, validateInsights, type DiffGraph, type Mode } from '@compass/core';
 import { buildStaticHtml } from './export.js';
 import { runAnalysis } from './run.js';
 import { serve } from './server.js';
@@ -94,7 +94,7 @@ program
     if (!loaded) throw new Error('No hay análisis: corre `compass map`, `compass diff` o `compass pr` primero.');
     const g = loaded.graph;
     if (o.check) {
-      const v = validateInsights(g, JSON.parse(readFileSync(resolve(o.check), 'utf8')));
+      const v = validateInsights(g, readJsonFile(resolve(o.check)));
       console.log(v.ok ? 'insights válidos' : v.errors.join('\n'));
       process.exitCode = v.ok ? 0 : 1;
       return;

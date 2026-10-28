@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { mergeInsights, type CompassConfig, type DiffGraph } from '@compass/core';
+import { mergeInsights, readJsonFile, type CompassConfig, type DiffGraph, type ExternalInsights } from '@compass/core';
 
 export interface Paths {
   dir: string;
@@ -31,7 +31,7 @@ export function loadGraph(p: Paths): { graph: DiffGraph; insightErrors: string[]
   const graph = JSON.parse(readFileSync(p.graph, 'utf8')) as DiffGraph;
   if (!existsSync(p.insights)) return { graph, insightErrors: [] };
   try {
-    const ext = JSON.parse(readFileSync(p.insights, 'utf8'));
+    const ext = readJsonFile<ExternalInsights & { headSha?: string }>(p.insights);
     // Solo aplica si se escribieron para este mismo análisis.
     if (ext.headSha && graph.meta.headSha && ext.headSha !== graph.meta.headSha && graph.meta.head !== 'WORKTREE') {
       return { graph, insightErrors: [`insights.json corresponde a ${ext.headSha.slice(0, 10)}, el grafo a ${graph.meta.headSha.slice(0, 10)}: se ignoró`] };

@@ -67,12 +67,22 @@ export const DEFAULT_CONFIG: CompassConfig = {
 
 export const CONFIG_FILES = ['compass.config.json', '.compassrc.json'];
 
+/**
+ * Lee un JSON tolerando lo que dejan los editores y PowerShell en Windows:
+ * BOM UTF-8 (`Set-Content -Encoding utf8`) y UTF-16LE (`Out-File` en PowerShell 5.1).
+ */
+export function readJsonFile<T = unknown>(path: string): T {
+  const buf = readFileSync(path);
+  const text = buf[0] === 0xff && buf[1] === 0xfe ? buf.subarray(2).toString('utf16le') : buf.toString('utf8');
+  return JSON.parse(text.replace(/^﻿/, '')) as T;
+}
+
 export function loadConfig(root: string, overrides: Partial<CompassConfig> = {}): CompassConfig {
   let fileCfg: Partial<CompassConfig> = {};
   for (const name of CONFIG_FILES) {
     const p = join(root, name);
     if (existsSync(p)) {
-      fileCfg = JSON.parse(readFileSync(p, 'utf8'));
+      fileCfg = readJsonFile(p);
       break;
     }
   }

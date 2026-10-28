@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { analyze, loadConfig, parseUnifiedDiff, renderArchitectureDoc, type DiffGraph } from '../src/index.js';
+import { analyze, loadConfig, parseUnifiedDiff, readJsonFile, renderArchitectureDoc, type DiffGraph } from '../src/index.js';
 import { parseTsconfig } from '../src/parse/resolve.js';
 import { makeFixture } from './fixture.js';
 
@@ -102,6 +102,24 @@ test('tsconfig con comentarios, globs y comas finales', () => {
     'packages/web',
   );
   assert.deepEqual(ts, { baseUrl: 'packages/web', paths: { '@/*': ['./src/*'], x: ['http://no-es-comentario', 'a"/*b'] } });
+});
+
+test('JSON escrito desde PowerShell (BOM UTF-8 y UTF-16LE)', async () => {
+  const { rmSync, writeFileSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const json = '{ "base": "main", "nota": "año" }';
+  const bom8 = join(fx.root, 'bom8.json');
+  const utf16 = join(fx.root, 'utf16.json');
+  writeFileSync(bom8, '﻿' + json, 'utf8'); // Set-Content -Encoding utf8
+  writeFileSync(utf16, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(json, 'utf16le')])); // Out-File (5.1)
+  for (const f of [bom8, utf16]) assert.deepEqual(readJsonFile(f), { base: 'main', nota: 'año' });
+  const cfg = join(fx.root, 'compass.config.json');
+  writeFileSync(cfg, '﻿{ "base": "feature" }');
+  try {
+    assert.equal(loadConfig(fx.root).base, 'feature');
+  } finally {
+    rmSync(cfg);
+  }
 });
 
 test('reglas de arquitectura', async () => {

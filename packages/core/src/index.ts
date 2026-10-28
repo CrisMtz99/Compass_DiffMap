@@ -5,4 +5,4 @@ export { Git, WORKTREE, parseUnifiedDiff } from './git/git.js';
 export { LANGUAGES } from './parse/languages.js';
 export { findCycles } from './score/insights.js';
 export { renderArchitectureDoc } from './doc/architecture.js';
-export { mergeInsights, validateInsights } from './insights-io.js';
+export { mergeInsights, validateInsights, type ExternalInsights } from './insights-io.js';
