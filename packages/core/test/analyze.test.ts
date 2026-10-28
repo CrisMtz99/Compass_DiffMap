@@ -104,6 +104,20 @@ test('tsconfig con comentarios, globs y comas finales', () => {
   assert.deepEqual(ts, { baseUrl: 'packages/web', paths: { '@/*': ['./src/*'], x: ['http://no-es-comentario', 'a"/*b'] } });
 });
 
+test('leer un archivo: distingue "no existe en la ref" de "falló git"', async () => {
+  const { Git } = await import('../src/index.js');
+  const git = new Git(fx.root);
+  assert.match((git.readFileResult('feature', 'src/utils/format.ts') as { text: string }).text, /formatDate/);
+  assert.deepEqual(git.readFileResult('feature', 'no/existe.ts'), { missing: true });
+  assert.deepEqual(git.readFileResult('main', 'src/chat/history.ts'), { missing: true }); // existe en disco, no en main
+  assert.deepEqual(git.readFileResult('WORKTREE', 'no/existe.ts'), { missing: true });
+  const badRef = git.readFileResult('0000000000000000000000000000000000000000', 'README.md');
+  assert.ok('error' in badRef, JSON.stringify(badRef));
+  const noRepo = new Git(fx.root + '-no-existe').readFileResult('feature', 'README.md'); // git ni siquiera arranca
+  assert.ok('error' in noRepo, JSON.stringify(noRepo));
+  assert.equal(git.readFile('feature', 'no/existe.ts'), undefined);
+});
+
 test('JSON escrito desde PowerShell (BOM UTF-8 y UTF-16LE)', async () => {
   const { rmSync, writeFileSync } = await import('node:fs');
   const { join } = await import('node:path');

@@ -83,10 +83,12 @@ export function serve(opts: ServeOptions): Promise<{ url: string; close: () => v
         const ref = which === 'base' ? g.graph.meta.baseSha : g.graph.meta.head === WORKTREE ? WORKTREE : g.graph.meta.headSha;
         const file = which === 'base' ? (fd?.oldPath ?? path) : path;
         if (!ref) return json(res, 404, { error: 'sin ref' });
-        const text = git.readFile(ref, file);
-        if (text === undefined) return json(res, 404, { error: 'no encontrado' });
+        const r = git.readFileResult(ref, file);
+        const where = ref === WORKTREE ? 'el árbol de trabajo' : ref.slice(0, 10);
+        if ('missing' in r) return json(res, 404, { error: `${file} no existe en ${where}` });
+        if ('error' in r) return json(res, 500, { error: `git no pudo leer ${file} de ${where}: ${r.error}` });
         res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-        return res.end(text);
+        return res.end(r.text);
       }
       if (url.pathname === '/api/analyze' && req.method === 'POST') {
         if (busy) return json(res, 409, { error: `Ya hay un análisis en curso (${busy})` });

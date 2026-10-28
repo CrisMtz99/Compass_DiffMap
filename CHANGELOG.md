@@ -2,6 +2,7 @@
 
 ## Sin publicar · Windows
 
+- **"sin código disponible" ahora dice por qué**: el servidor separa "el archivo no existe en esa ref" (404) de "git falló" (500: ref inexistente, git que no arranca…) y la app muestra el motivo en la tarjeta y en el panel. Antes cualquier fallo de git se veía igual que un archivo inexistente (pasó con un servidor que perdió su proceso padre). Los errores ya no quedan en la caché del navegador: se reintentan. `compass export` falla con el error de git en vez de generar un HTML sin código.
 - **Instalador para Windows**: `irm …/scripts/install.ps1 | iex` clona o actualiza en `~\.compass`, construye, deja `compass.cmd` (PowerShell/cmd) y `compass` (Git Bash) en `~\.local\bin`, agrega esa carpeta al `PATH` del usuario (sin expandir ni cambiar el tipo del valor existente) y copia la skill. Documentado en el README.
 - **Fix en `install.sh`**: con `COMPASS_SKILL=project` la skill se copiaba dentro de `~/.compass` y no en el repo desde donde se corría el instalador. `.gitattributes` mantiene los `.sh` con LF en clones de Windows.
 - **`compass serve --open` abre el navegador en Windows**: usa `cmd /c start "" <url>` (`start` es un comando interno de cmd y `execFile('start')` fallaba en silencio). macOS y Linux siguen con `open` / `xdg-open`.

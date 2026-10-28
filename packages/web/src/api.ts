@@ -67,17 +67,24 @@ export async function writeDoc(target: 'repo' | 'compass'): Promise<{ path: stri
   return r.json();
 }
 
-const cache = new Map<string, Promise<string | null>>();
+/** El código de un archivo, o por qué no se pudo obtener (se muestra tal cual en la app). */
+export type Source = { text: string } | { error: string };
 
-/** Código fuente de un archivo en la versión head o base. */
-export function fetchSource(path: string, which: 'head' | 'base' = 'head'): Promise<string | null> {
+const cache = new Map<string, Promise<Source>>();
+
+/** Código fuente de un archivo en la versión head o base. Los errores no se guardan en caché: se reintentan. */
+export function fetchSource(path: string, which: 'head' | 'base' = 'head'): Promise<Source> {
   const key = `${which}:${path}`;
-  if (window.__COMPASS_STATIC__) return Promise.resolve(window.__COMPASS_STATIC__.sources[key] ?? null);
+  if (window.__COMPASS_STATIC__) {
+    const text = window.__COMPASS_STATIC__.sources[key];
+    return Promise.resolve(text !== undefined ? { text } : { error: 'El código de este archivo no se incluyó en el HTML exportado' });
+  }
   if (!cache.has(key)) {
-    cache.set(
-      key,
-      fetch(`/api/source?ref=${which}&path=${encodeURIComponent(path)}`).then((r) => (r.ok ? r.text() : null)),
-    );
+    const p: Promise<Source> = fetch(`/api/source?ref=${which}&path=${encodeURIComponent(path)}`)
+      .then(async (r) => (r.ok ? { text: await r.text() } : { error: ((await r.json().catch(() => ({}))) as { error?: string }).error ?? `HTTP ${r.status}` }))
+      .catch((e: Error) => ({ error: `No se pudo contactar al servidor de Compass (${e.message})` }));
+    p.then((s) => 'error' in s && cache.delete(key));
+    cache.set(key, p);
   }
   return cache.get(key)!;
 }

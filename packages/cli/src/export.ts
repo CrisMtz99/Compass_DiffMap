@@ -13,10 +13,12 @@ export function buildStaticHtml(root: string, graph: DiffGraph): string {
   let bytes = 0;
   const add = (key: string, ref: string | undefined, path: string) => {
     if (!ref || bytes > MAX_SOURCE_BYTES) return;
-    const t = git.readFile(ref, path);
-    if (t === undefined) return;
-    bytes += t.length;
-    sources[key] = t;
+    const r = git.readFileResult(ref, path);
+    if ('missing' in r) return;
+    // Un fallo de git no se omite en silencio: el HTML saldría sin código y sin explicar por qué.
+    if ('error' in r) throw new Error(`git no pudo leer ${path}: ${r.error}`);
+    bytes += r.text.length;
+    sources[key] = r.text;
   };
   const changed = Object.values(graph.files);
   for (const fd of changed) {

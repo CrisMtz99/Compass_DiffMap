@@ -171,6 +171,7 @@ a { color: var(--dep); text-decoration: none; }
 .code-head svg { color: var(--muted); }
 .code-body { font: 11.5px/17px var(--mono); padding: 4px 0 6px; overflow: hidden; }
 .code-body.loading { color: var(--faint); padding: 10px 12px; }
+.code-body.code-error { color: #ffa198; white-space: normal; overflow-wrap: anywhere; }
 .cl { display: flex; white-space: pre; position: relative; }
 .cl-no { width: 38px; flex-shrink: 0; text-align: right; padding-right: 10px; color: var(--faint); user-select: none; }
 .cl-txt { flex: 1; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }

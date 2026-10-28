@@ -72,23 +72,36 @@ export class Git {
   }
 
   readFile(ref: string, path: string): string | undefined {
+    const r = this.readFileResult(ref, path);
+    return 'text' in r ? r.text : undefined;
+  }
+
+  /**
+   * Como readFile, pero separa "el archivo no existe en ese ref" (`missing`) de "git falló"
+   * (`error`: ref inexistente, git que no arranca…), para no mostrar un fallo como si faltara el archivo.
+   */
+  readFileResult(ref: string, path: string): { text: string } | { missing: true } | { error: string } {
     if (ref === WORKTREE) {
       try {
-        return readFileSync(join(this.root, path), 'utf8');
-      } catch {
-        return undefined;
+        return { text: readFileSync(join(this.root, path), 'utf8') };
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code;
+        return code === 'ENOENT' || code === 'EISDIR' || code === 'ENOTDIR' ? { missing: true } : { error: (e as Error).message };
       }
     }
-    try {
-      return execFileSync('git', ['show', `${ref}:${path}`], {
-        cwd: this.root,
-        encoding: 'utf8',
-        maxBuffer: 64 * 1024 * 1024,
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-    } catch {
-      return undefined;
-    }
+    const res = spawnSync('git', ['show', `${ref}:${path}`], {
+      cwd: this.root,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, LC_ALL: 'C' }, // mensajes de git en inglés, sin importar el idioma del sistema
+    });
+    if (res.error) return { error: `no se pudo ejecutar git: ${res.error.message}` };
+    if (res.status === 0) return { text: res.stdout };
+    const stderr = res.stderr.trim();
+    // git da el mismo mensaje cuando el SHA no existe ("… but not in '0000…'"): se confirma la ref.
+    if (/does not exist in|exists on disk, but not in/.test(stderr)) return this.resolve(ref) ? { missing: true } : { error: `la ref ${ref} no existe en este repo` };
+    return { error: stderr || `git show salió con código ${res.status}` };
   }
 
   fileSize(ref: string, path: string): number {

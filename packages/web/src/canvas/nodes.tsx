@@ -6,7 +6,7 @@ import javascript from 'highlight.js/lib/languages/javascript';
 import python from 'highlight.js/lib/languages/python';
 import java from 'highlight.js/lib/languages/java';
 import type { DiffNode } from '@compass/core';
-import { fetchSource } from '../api';
+import { fetchSource, type Source } from '../api';
 import { CODE_MAX_LINES } from '../model/layout';
 import type { ViewNode } from '../model/view';
 import { useCanvas } from './context';
@@ -237,10 +237,13 @@ export interface CodeLine {
   delBefore?: boolean;
 }
 
+/** null = cargando; `{ error }` = no se pudo leer el código (con el motivo). */
+export type SymbolLines = CodeLine[] | { error: string } | null;
+
 /** Líneas del símbolo con marcas del diff (agregadas en verde, puntos de borrado en rojo). */
-export function useSymbolLines(n: DiffNode, max = CODE_MAX_LINES): CodeLine[] | null {
+export function useSymbolLines(n: DiffNode, max = CODE_MAX_LINES): SymbolLines {
   const { graph } = useCanvas();
-  const [src, setSrc] = useState<string | null | undefined>(undefined);
+  const [src, setSrc] = useState<Source | undefined>(undefined);
   const which = n.status === 'deleted' ? 'base' : 'head';
   useEffect(() => {
     let alive = true;
@@ -251,8 +254,9 @@ export function useSymbolLines(n: DiffNode, max = CODE_MAX_LINES): CodeLine[] | 
   }, [n.path, which]);
   return useMemo(() => {
     if (src === undefined) return null;
-    if (src === null || !n.range) return [];
-    const all = src.split('\n');
+    if ('error' in src) return src;
+    if (!n.range) return [];
+    const all = src.text.split('\n');
     const fd = graph.files[n.path];
     const added = new Set<number>();
     const delAt = new Set<number>();
@@ -299,8 +303,9 @@ export function CodeRow({ no, mark, delBefore, text, language, wrap }: { no: str
 
 const hlLang = (language?: string) => (language === 'tsx' ? 'typescript' : language && hljs.getLanguage(language) ? language : undefined);
 
-export function CodeLines({ lines, language, total, wrap }: { lines: CodeLine[] | null; language?: string; total?: number; wrap?: boolean }) {
+export function CodeLines({ lines, language, total, wrap }: { lines: SymbolLines; language?: string; total?: number; wrap?: boolean }) {
   if (lines === null) return <div className="code-body loading">cargando…</div>;
+  if (!Array.isArray(lines)) return <div className="code-body loading code-error" title={lines.error}>{lines.error}</div>;
   if (!lines.length) return <div className="code-body loading">sin código disponible</div>;
   const lang = hlLang(language);
   // quitar indentación común
