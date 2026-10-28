@@ -146,8 +146,10 @@ program
     const s = await serve({ root, port: o.port ?? config.port, host: o.host });
     console.log(`Compass en ${s.url}  (repo: ${root})`);
     if (o.open) {
-      const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-      execFile(cmd, [s.url], () => {});
+      // En Windows `start` es un comando interno de cmd; el "" vacío es el título de la ventana
+      // (verbatim para que Node no escape esas comillas).
+      if (process.platform === 'win32') execFile('cmd', ['/c', 'start', '""', s.url], { windowsVerbatimArguments: true }, () => {});
+      else execFile(process.platform === 'darwin' ? 'open' : 'xdg-open', [s.url], () => {});
     }
   });
 

@@ -2,6 +2,7 @@
 
 ## Sin publicar · Windows
 
+- **`compass serve --open` abre el navegador en Windows**: usa `cmd /c start "" <url>` (`start` es un comando interno de cmd y `execFile('start')` fallaba en silencio). macOS y Linux siguen con `open` / `xdg-open`.
 - **Pruebas en Windows**: los repos del fixture fijan `core.autocrlf=false`, así que el resultado ya no depende de la configuración global de git (Git for Windows trae `true`). `pnpm test` pasa en Windows (Node 22+, que expande el glob `test/*.test.ts` por sí mismo).
 
 ## 0.2.2 — 2026-10-27 · Primer repo real (facturador)
