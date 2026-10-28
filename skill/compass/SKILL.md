@@ -23,6 +23,12 @@ compass --version
 curl -fsSL https://raw.githubusercontent.com/CrisMtz99/Compass_DiffMap/main/scripts/install.sh | bash
 ```
 
+En Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/CrisMtz99/Compass_DiffMap/main/scripts/install.ps1 | iex
+```
+
 Si vas a usar `compass diff` sin `--base` y el repo no tiene `compass.config.json`,
 corre `compass init` (detecta la rama base; crea un archivo en el repo, así que
 pregunta antes en un repo ajeno). Con `--base` explícito no hace falta.

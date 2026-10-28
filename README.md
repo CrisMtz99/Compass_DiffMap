@@ -42,14 +42,22 @@ Probado sobre el PR del video ([typedb-studio#905](https://github.com/typedb/typ
 
 Requiere Node 20+ y git (el instalador habilita pnpm con corepack si falta).
 
+**macOS / Linux**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/CrisMtz99/Compass_DiffMap/main/scripts/install.sh | bash
 ```
 
+**Windows** (PowerShell 5.1 o 7)
+
+```powershell
+irm https://raw.githubusercontent.com/CrisMtz99/Compass_DiffMap/main/scripts/install.ps1 | iex
+```
+
 Qué hace:
 
-1. Clona el repo en `~/.compass` y lo construye.
-2. Deja el comando `compass` en `~/.local/bin` (si esa carpeta no está en tu `PATH`, el instalador te dice qué línea agregar a `~/.zshrc` o `~/.bashrc`).
+1. Clona el repo en `~/.compass` (`%USERPROFILE%\.compass`) y lo construye.
+2. Deja el comando `compass` en `~/.local/bin`. En macOS/Linux, si esa carpeta no está en tu `PATH`, el instalador te dice qué línea agregar a `~/.zshrc` o `~/.bashrc`. En Windows crea `compass.cmd` (PowerShell y cmd) y `compass` (Git Bash), y agrega la carpeta al `PATH` de tu usuario; las terminales que ya estaban abiertas no lo ven hasta que abras una nueva.
 3. Copia la skill a `~/.claude/skills/compass`, disponible en todas tus sesiones de Claude Code.
 
 | Variable | Para qué | Default |
@@ -59,7 +67,10 @@ Qué hace:
 | `COMPASS_HOME` | Dónde se clona | `~/.compass` |
 | `COMPASS_BIN` | Dónde queda el comando | `~/.local/bin` |
 
-**Actualizar**: vuelve a correr el mismo comando. **Desinstalar**: `rm -rf ~/.compass ~/.local/bin/compass ~/.claude/skills/compass`.
+En PowerShell las variables se fijan antes de correrlo: `$env:COMPASS_REF = 'mi-rama'; irm … | iex`.
+
+**Actualizar**: vuelve a correr el mismo comando.
+**Desinstalar**: `rm -rf ~/.compass ~/.local/bin/compass ~/.claude/skills/compass`. En Windows: `Remove-Item -Recurse -Force ~\.compass, ~\.local\bin\compass, ~\.local\bin\compass.cmd, ~\.claude\skills\compass`, y quita `~\.local\bin` del `PATH` si no lo usas para otra cosa.
 
 Desde el código:
 
@@ -114,7 +125,7 @@ packages/
   cli/    compass map | diff | pr | insights | serve | export | init
   web/    React + React Flow + ELK + highlight.js, compilado a un solo index.html
 skill/compass/   skill de Claude Code (SKILL.md + formato de insights)
-scripts/install.sh
+scripts/install.sh, install.ps1
 ```
 
 El contrato entre todo es `.compass/graph.json` ([`schema.ts`](packages/core/src/schema.ts)); la skill escribe aparte `.compass/insights.json` ([formato](skill/compass/references/insights.md)) y Compass lo fusiona validando los ids. La estructura de este mismo repo, generada por Compass, está en [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
