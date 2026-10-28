@@ -11,7 +11,8 @@ export class Git {
 
   run(args: string[], opts: { allowFail?: boolean } = {}): string {
     try {
-      return execFileSync('git', args, {
+      // quotePath=false: rutas no ASCII (año.ts) tal cual, no "a\303\261o.ts"
+      return execFileSync('git', ['-c', 'core.quotePath=false', ...args], {
         cwd: this.root,
         encoding: 'utf8',
         maxBuffer: 512 * 1024 * 1024,
@@ -182,6 +183,28 @@ export function splitLines(text: string): string[] {
   return lines;
 }
 
+/**
+ * Ruta tal como la escribe git: si tiene comillas, `\` o caracteres de control (o no es ASCII
+ * con quotePath activo), va entre comillas con escapes de C y bytes UTF-8 en octal.
+ */
+export function unquotePath(p: string): string {
+  if (p.length < 2 || !p.startsWith('"') || !p.endsWith('"')) return p;
+  const esc: Record<string, number> = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 };
+  const bytes: number[] = [];
+  for (let i = 1; i < p.length - 1; i++) {
+    if (p[i] !== '\\') {
+      bytes.push(...Buffer.from(p[i], 'utf8'));
+      continue;
+    }
+    const n = p[++i];
+    if (/[0-7]/.test(n)) {
+      bytes.push(parseInt(p.slice(i, i + 3), 8));
+      i += 2;
+    } else bytes.push(esc[n] ?? n.charCodeAt(0));
+  }
+  return Buffer.from(bytes).toString('utf8');
+}
+
 /** Parser de `git diff` unificado. */
 export function parseUnifiedDiff(out: string): FileDiff[] {
   const files: FileDiff[] = [];
@@ -190,9 +213,11 @@ export function parseUnifiedDiff(out: string): FileDiff[] {
   const lines = out.split('\n');
   for (const line of lines) {
     if (line.startsWith('diff --git ')) {
-      const m = /^diff --git a\/(.*) b\/(.*)$/.exec(line);
-      cur = { path: m ? m[2] : '', status: 'modified', added: 0, removed: 0, hunks: [] };
-      if (m && m[1] !== m[2]) cur.oldPath = m[1];
+      const m = /^diff --git ("(?:[^"\\]|\\.)*"|a\/.*) ("(?:[^"\\]|\\.)*"|b\/.*)$/.exec(line);
+      const a = m ? unquotePath(m[1]).slice(2) : '';
+      const b = m ? unquotePath(m[2]).slice(2) : '';
+      cur = { path: b, status: 'modified', added: 0, removed: 0, hunks: [] };
+      if (a !== b) cur.oldPath = a;
       files.push(cur);
       hunk = null;
       continue;
@@ -200,8 +225,8 @@ export function parseUnifiedDiff(out: string): FileDiff[] {
     if (!cur) continue;
     if (line.startsWith('new file mode')) cur.status = 'added';
     else if (line.startsWith('deleted file mode')) cur.status = 'deleted';
-    else if (line.startsWith('rename from ')) cur.oldPath = line.slice('rename from '.length);
-    else if (line.startsWith('rename to ')) cur.path = line.slice('rename to '.length);
+    else if (line.startsWith('rename from ')) cur.oldPath = unquotePath(line.slice('rename from '.length));
+    else if (line.startsWith('rename to ')) cur.path = unquotePath(line.slice('rename to '.length));
     else if (line.startsWith('--- ') || line.startsWith('+++ ')) {
       // las rutas ya salen del encabezado diff --git
     } else if (line.startsWith('@@')) {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { analyze, loadConfig, renderArchitectureDoc, type DiffGraph } from '../src/index.js';
+import { analyze, loadConfig, parseUnifiedDiff, renderArchitectureDoc, type DiffGraph } from '../src/index.js';
 import { makeFixture } from './fixture.js';
 
 let fx: ReturnType<typeof makeFixture>;
@@ -24,6 +24,31 @@ test('estados de archivos en diff', () => {
   assert.equal(node(diff, 'src/utils/old.ts')?.status, 'deleted');
   assert.equal(node(diff, 'src/app/main.ts')?.status, 'unchanged');
   assert.equal(node(diff, 'src/')?.status, 'modified');
+});
+
+test('rutas con acentos y ids siempre con /', () => {
+  // sin core.quotePath=false, git escribe "a/src/utils/a\303\261o.ts" en el encabezado del diff
+  assert.equal(node(diff, 'src/utils/año.ts')?.status, 'modified');
+  assert.equal(node(diff, 'src/utils/año.ts#diasDelAño')?.status, 'modified');
+  for (const g of [diff, map]) {
+    assert.ok(g.nodes.every((n) => !n.id.includes('\\')), 'ids sin \\');
+    assert.ok(g.edges.every((e) => !e.source.includes('\\') && !e.target.includes('\\')));
+  }
+  // lo que git entrecomilla aun con quotePath=false (comillas, \, control) y renombres
+  const [q, r] = parseUnifiedDiff(
+    [
+      'diff --git "a/src/a\\303\\261o \\"x\\".ts" "b/src/a\\303\\261o \\"x\\".ts"',
+      '@@ -1 +1 @@',
+      '-a',
+      '+b',
+      'diff --git a/src/old name.ts b/src/new name.ts',
+      'rename from src/old name.ts',
+      'rename to src/new name.ts',
+    ].join('\n'),
+  );
+  assert.equal(q.path, 'src/año "x".ts');
+  assert.equal(q.oldPath, undefined);
+  assert.deepEqual([r.oldPath, r.path], ['src/old name.ts', 'src/new name.ts']);
 });
 
 test('estados de símbolos: agregado, modificado, borrado, sin cambios', () => {

@@ -24,6 +24,7 @@ export function makeFixture(): { root: string; cleanup: () => void } {
     'src/chat/chat.service.ts': `import { formatDate } from '../utils/format';\n\nexport class ChatService {\n  history: string[] = [];\n\n  send(msg: string) {\n    this.history.push(msg);\n    this.log(msg);\n  }\n\n  log(msg: string) {\n    console.log(formatDate(new Date()), msg);\n  }\n}\n`,
     'src/utils/format.ts': `export function formatDate(d: Date): string {\n  return d.toISOString();\n}\n\nexport const pad = (n: number) => String(n).padStart(2, '0');\n`,
     'src/utils/old.ts': `export function legacy() {\n  return 1;\n}\n`,
+    'src/utils/año.ts': `export function diasDelAño() {\n  return 365;\n}\n`,
     'tsconfig.json': `{\n  // alias\n  "compilerOptions": { "baseUrl": ".", "paths": { "@utils/*": ["src/utils/*"] } },\n}\n`,
     'py/pkg/__init__.py': '',
     'py/pkg/models.py': `class User:\n    def __init__(self, name):\n        self.name = name\n\n    def greet(self):\n        return helper(self.name)\n\n\ndef helper(x):\n    return x.upper()\n`,
@@ -38,6 +39,7 @@ export function makeFixture(): { root: string; cleanup: () => void } {
   write(root, {
     'src/chat/chat.service.ts': `import { formatDate, pad } from '../utils/format';\n\nexport class ChatService {\n  history: string[] = [];\n\n  send(msg: string) {\n    this.history.push(msg);\n    this.audit(msg);\n  }\n\n  audit(msg: string) {\n    console.log(formatDate(new Date()), pad(msg.length), msg);\n  }\n}\n`,
     'src/utils/format.ts': `export function formatDate(d: Date): string {\n  return d.toISOString().slice(0, 10);\n}\n\nexport const pad = (n: number) => String(n).padStart(2, '0');\n`,
+    'src/utils/año.ts': `export function diasDelAño() {\n  return 366;\n}\n`,
     'src/chat/history.ts': `import { ChatService } from './chat.service';\n\nexport function lastMessage(s: ChatService) {\n  return s.history[s.history.length - 1];\n}\n`,
     'py/pkg/models.py': `class User:\n    def __init__(self, name):\n        self.name = name\n\n    def greet(self):\n        return helper(self.name) + "!"\n\n\ndef helper(x):\n    return x.upper()\n`,
     'java/src/main/java/com/acme/Billing.java': `package com.acme;\n\nimport java.util.List;\n\npublic class Billing {\n    public int charge(Order o) {\n        return o.getTotal() * 2;\n    }\n\n    public int refund(Order o) {\n        return -o.getTotal();\n    }\n}\n`,
