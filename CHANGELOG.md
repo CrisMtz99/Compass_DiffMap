@@ -1,5 +1,9 @@
 # Changelog
 
+## Sin publicar · Windows
+
+- **Pruebas en Windows**: los repos del fixture fijan `core.autocrlf=false`, así que el resultado ya no depende de la configuración global de git (Git for Windows trae `true`). `pnpm test` pasa en Windows (Node 22+, que expande el glob `test/*.test.ts` por sí mismo).
+
 ## 0.2.2 — 2026-10-27 · Primer repo real (facturador)
 
 - **Alias de tsconfig por paquete**: en monorepos cada archivo usa el `tsconfig.json` (o `tsconfig.app.json`) más cercano, p. ej. `"@/*": ["./src/*"]` de `packages/web`. Antes solo se leía el de la raíz y los imports con `@/` quedaban sin resolver (componentes marcados como huérfanos).

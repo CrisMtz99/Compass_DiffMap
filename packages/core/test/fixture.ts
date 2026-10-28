@@ -17,6 +17,8 @@ export function makeFixture(): { root: string; cleanup: () => void } {
   git(root, 'init', '-q', '-b', 'main');
   git(root, 'config', 'user.email', 'test@compass.dev');
   git(root, 'config', 'user.name', 'Compass Test');
+  // Independiente del core.autocrlf global (true por defecto en Git for Windows).
+  git(root, 'config', 'core.autocrlf', 'false');
   write(root, {
     'src/app/main.ts': `import { ChatService } from '../chat/chat.service';\nimport { formatDate } from '@utils/format';\n\nexport function main() {\n  const s = new ChatService();\n  s.send('hola');\n  console.log(formatDate(new Date()));\n}\n`,
     'src/chat/chat.service.ts': `import { formatDate } from '../utils/format';\n\nexport class ChatService {\n  history: string[] = [];\n\n  send(msg: string) {\n    this.history.push(msg);\n    this.log(msg);\n  }\n\n  log(msg: string) {\n    console.log(formatDate(new Date()), msg);\n  }\n}\n`,
