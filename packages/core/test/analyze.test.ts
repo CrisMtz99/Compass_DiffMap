@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { analyze, loadConfig, parseUnifiedDiff, renderArchitectureDoc, type DiffGraph } from '../src/index.js';
+import { parseTsconfig } from '../src/parse/resolve.js';
 import { makeFixture } from './fixture.js';
 
 let fx: ReturnType<typeof makeFixture>;
@@ -93,6 +94,14 @@ test('modo map: entry points, doc', () => {
   const md = renderArchitectureDoc(map);
   assert.match(md, /# Arquitectura de/);
   assert.match(md, /src\/app\/main.ts/);
+});
+
+test('tsconfig con comentarios, globs y comas finales', () => {
+  const ts = parseTsconfig(
+    `{\n  "compilerOptions": {\n    "baseUrl": ".", // base\n    "paths": { "@/*": ["./src/*"], "x": ["http://no-es-comentario", "a\\"/*b"] }, /* bloque */\n  },\n  "include": ["src/**/*"], // fin\n}\n`,
+    'packages/web',
+  );
+  assert.deepEqual(ts, { baseUrl: 'packages/web', paths: { '@/*': ['./src/*'], x: ['http://no-es-comentario', 'a"/*b'] } });
 });
 
 test('reglas de arquitectura', async () => {

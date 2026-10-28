@@ -25,7 +25,8 @@ export function makeFixture(): { root: string; cleanup: () => void } {
     'src/utils/format.ts': `export function formatDate(d: Date): string {\n  return d.toISOString();\n}\n\nexport const pad = (n: number) => String(n).padStart(2, '0');\n`,
     'src/utils/old.ts': `export function legacy() {\n  return 1;\n}\n`,
     'src/utils/año.ts': `export function diasDelAño() {\n  return 365;\n}\n`,
-    'tsconfig.json': `{\n  // alias\n  "compilerOptions": { "baseUrl": ".", "paths": { "@utils/*": ["src/utils/*"] } },\n}\n`,
+    // "@utils/*" … "src/**/*" parecen un comentario /* … */ si no se respetan los strings
+    'tsconfig.json': `{\n  // alias\n  "compilerOptions": { "baseUrl": ".", /* rutas */ "paths": { "@utils/*": ["src/utils/*"] } },\n  "include": ["src/**/*"],\n}\n`,
     'py/pkg/__init__.py': '',
     'py/pkg/models.py': `class User:\n    def __init__(self, name):\n        self.name = name\n\n    def greet(self):\n        return helper(self.name)\n\n\ndef helper(x):\n    return x.upper()\n`,
     'py/pkg/api.py': `from .models import User\n\n\ndef handle(name):\n    u = User(name)\n    return u.greet()\n`,

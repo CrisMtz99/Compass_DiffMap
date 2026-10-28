@@ -15,15 +15,46 @@ export interface TsPaths {
   paths: Record<string, string[]>;
 }
 
+/**
+ * JSONC → JSON: quita comentarios y comas finales sin tocar los strings
+ * ("@/*" y "src/**\/*" juntos parecen un comentario de bloque).
+ */
+export function stripJsonc(text: string): string {
+  // Pasa por el texto copiando los strings tal cual; `skip` decide qué se descarta fuera de ellos.
+  const pass = (src: string, skip: (i: number) => number) => {
+    let out = '';
+    for (let i = 0; i < src.length; ) {
+      if (src[i] === '"') {
+        let j = i + 1;
+        while (j < src.length && src[j] !== '"') j += src[j] === '\\' ? 2 : 1;
+        out += src.slice(i, j + 1);
+        i = j + 1;
+        continue;
+      }
+      const n = skip(i);
+      if (n) i += n;
+      else out += src[i++];
+    }
+    return out;
+  };
+  const upTo = (end: number, extra: number, i: number) => (end < 0 ? text.length : end + extra) - i;
+  const noComments = pass(text, (i) => {
+    if (text.startsWith('//', i)) return upTo(text.indexOf('\n', i), 0, i); // conserva el salto de línea
+    if (text.startsWith('/*', i)) return upTo(text.indexOf('*/', i + 2), 2, i);
+    return 0;
+  });
+  const trailing = /,\s*[}\]]/y;
+  return pass(noComments, (i) => {
+    trailing.lastIndex = i;
+    return trailing.test(noComments) ? 1 : 0;
+  });
+}
+
 /** Lee compilerOptions.baseUrl y paths de un tsconfig (tolera comentarios y comas finales). */
 export function parseTsconfig(text: string | undefined, tsconfigDir: string): TsPaths | undefined {
   if (!text) return undefined;
   try {
-    const clean = text
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/(^|[^:"'])\/\/.*$/gm, '$1')
-      .replace(/,(\s*[}\]])/g, '$1');
-    const json = JSON.parse(clean);
+    const json = JSON.parse(stripJsonc(text));
     const co = json.compilerOptions ?? {};
     if (!co.paths && !co.baseUrl) return undefined;
     return { baseUrl: normalize(join(tsconfigDir, co.baseUrl ?? '.')), paths: co.paths ?? {} };
