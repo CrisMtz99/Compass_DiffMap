@@ -54,14 +54,15 @@
   # Git Bash: shebang con fin de linea LF y ruta con /
   [IO.File]::WriteAllText((Join-Path $Bin 'compass'), "#!/usr/bin/env bash`nexec node `"$($entry -replace '\\', '/')`" `"`$@`"`n", $noBom)
 
-  # PATH del usuario: se lee y escribe sin expandir (%USERPROFILE%... se conservan) como REG_EXPAND_SZ.
+  # PATH del usuario: se lee y escribe sin expandir (%USERPROFILE%... se conservan) y con su mismo tipo de valor.
   $norm = { param($p) [Environment]::ExpandEnvironmentVariables($p).TrimEnd('\').ToLowerInvariant() }
   $envKey = Get-Item 'HKCU:\Environment'
   $userPath = [string]$envKey.GetValue('Path', '', 'DoNotExpandEnvironmentNames')
+  $kind = if ($envKey.GetValueNames() -contains 'Path' -and $userPath -notmatch '%') { $envKey.GetValueKind('Path') } else { 'ExpandString' }
   $parts = @($userPath -split ';' | Where-Object { $_ })
   $added = $false
   if (-not ($parts | Where-Object { (& $norm $_) -eq (& $norm $Bin) })) {
-    Set-ItemProperty 'HKCU:\Environment' -Name Path -Value (($parts + $Bin) -join ';') -Type ExpandString
+    Set-ItemProperty 'HKCU:\Environment' -Name Path -Value (($parts + $Bin) -join ';') -Type $kind
     # Avisa a Windows del cambio (las terminales nuevas lo toman) con una variable temporal.
     [Environment]::SetEnvironmentVariable('COMPASS_PATH_REFRESH', '1', 'User')
     [Environment]::SetEnvironmentVariable('COMPASS_PATH_REFRESH', $null, 'User')
